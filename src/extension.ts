@@ -13,24 +13,23 @@ export function activate(context: vscode.ExtensionContext) {
 
         const texFilePath = editor.document.fileName;
         const htmlFilePath = texFilePath.replace('.tex', '.html');
-        const scriptPath = path.join(__dirname, '..', 'src', 'preprocessor.py');
+        const scriptPath = path.join(__dirname, '..', 'out', 'preprocessor.py');
         const base_path = path.dirname(texFilePath);
 
-        cp.exec(`python3 "${scriptPath}" "${texFilePath}"`, (err, stdout, stderr) => {
+        cp.exec(`python "${scriptPath}" "${texFilePath}"`, (err, stdout, stderr) => {
             if (err) {
                 vscode.window.showErrorMessage('Failed to preprocess .tex file: ' + err);
                 return;
             }
             
             const tempFilePath = stdout.trim();
-            console.log(stderr.trim())
-            console.log(tempFilePath)
             cp.exec(`pandoc "${tempFilePath}" --mathjax -t html -s -o "${htmlFilePath}"`, (err) => {
                 if (err) {
                     vscode.window.showErrorMessage('Failed to convert .tex to HTML: ' + err);
                     return;
                 }
 
+                // Create webview panel
                 const panel = vscode.window.createWebviewPanel(
                     'texToHtmlView',
                     'TEX Preview',
@@ -40,7 +39,21 @@ export function activate(context: vscode.ExtensionContext) {
                     }
                 );
 
-                const htmlContent = fs.readFileSync(htmlFilePath, 'utf8');
+                let htmlContent = fs.readFileSync(htmlFilePath, 'utf8');
+
+                // Convert image paths to vscode-resource URIs
+                htmlContent = htmlContent.replace(/img src="([^"]+)"/g, (_, p1) => {
+                    let imagePath = path.resolve(path.dirname(htmlFilePath), p1);
+                    let vscodeResourcePath = panel.webview.asWebviewUri(vscode.Uri.file(imagePath));
+                    return `img src="${vscodeResourcePath}"`;
+                });
+
+                // Insert the <meta> tag after the opening <head> tag
+                const metaTag =`<meta http-equiv="Content-Security-Policy" content="default-src *; style-src 'unsafe-inline'; script-src *; img-src *;">`;
+                htmlContent = htmlContent.replace('<head>', `<head>\n\t${metaTag}`);
+                
+                // Debugging purpose
+                fs.writeFileSync(htmlFilePath, htmlContent, 'utf-8')
                 panel.webview.html = htmlContent;
             });
         });
