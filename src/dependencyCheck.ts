@@ -4,7 +4,7 @@ import * as path from 'path';
 
 export function checkDependencies(): void {
     childProcess.exec('pandoc --version && python3 --version', (error, stdout, stderr) => {
-        if (!error) {
+        if (error) {
             vscode.window.showErrorMessage(
                 'Pandoc and Python3 are required for this extension. Please install them to continue.',
                 'Install Guide'
