@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
+import { checkDependencies } from './dependencyCheck';
 
 export function activate(context: vscode.ExtensionContext) {
     let disposable = vscode.commands.registerCommand('extension.convertTexToHtml', () => {
@@ -48,9 +49,21 @@ export function activate(context: vscode.ExtensionContext) {
                     return `img src="${vscodeResourcePath}"`;
                 });
 
+                // const fontFaceCSS = `
+                // @import url("https://cdn.jsdelivr.net/gh/vsalvino/computer-modern@main/fonts/serif.css");
+
+                // body {
+                //     font-family: 'Computer Modern Serif', sans-serif;
+                // }
+                // `;
+
+                // Then, after reading the HTML content and before writing it back:
+                // htmlContent = htmlContent.replace('</head>', `<style>${fontFaceCSS}</style></head>`);
+
+
                 // Insert the <meta> tag after the opening <head> tag
-                const metaTag =`<meta http-equiv="Content-Security-Policy" content="default-src *; style-src 'unsafe-inline'; script-src *; img-src *;">`;
-                htmlContent = htmlContent.replace('<head>', `<head>\n\t${metaTag}`);
+                // const metaTag =`<meta http-equiv="Content-Security-Policy" content="default-src *; style-src 'unsafe-inline'; script-src *; img-src *;">`;
+                // htmlContent = htmlContent.replace('<head>', `<head>\n\t${metaTag}`);
                 
                 // Debugging purpose
                 fs.writeFileSync(htmlFilePath, htmlContent, 'utf-8')
@@ -60,6 +73,8 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     context.subscriptions.push(disposable);
+    //Check for dependencies on activation
+    checkDependencies();
 }
 
 export function deactivate() {}
