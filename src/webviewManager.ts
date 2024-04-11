@@ -2,13 +2,62 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 
+function replaceEquationNotation(htmlContent: string): string {
+    // Define the regular expression to match the pattern \[ ... \]
+    // Using the 's' flag for dotAll mode, so '.' matches newline characters as well
+    // The '?' in '.*?' makes the matching non-greedy
+    const pattern = /\\\[(.*?)\\\]/gs;
+  
+    // Replace each match with the modified LaTeX equation format
+    const updatedContent = htmlContent.replace(pattern, (match, equationContent) => {
+      return `\\[\\begin{equation}${equationContent}\\end{equation}\\]`;
+    });
+  
+    return updatedContent;
+}
+  
+function replaceMathJaxScripts(htmlContent: string): string {
+    // Define the regular expression to match the exact script tags
+    const pattern = /<script src="https:\/\/cdnjs.cloudflare.com\/polyfill\/v3\/polyfill.min.js\?features=es6"><\/script>\s*<script\s+src="https:\/\/cdn.jsdelivr.net\/npm\/mathjax@3\/es5\/tex-chtml-full.js"\s+type="text\/javascript"><\/script>/gs;
+  
+    // Define the replacement string, which includes the new script configuration for MathJax
+    const replacement = `<script>
+          window.MathJax = {
+          tex: {
+            tags: "ams", // This enables automatic equation numbering
+            inlineMath: [["$", "$"], ["\\\\(", "\\\\)"]],
+            displayMath: [["$$", "$$"], ["\\\\[", "\\\\]"]]
+          },
+          svg: {
+              fontCache: 'global'
+          },
+          loader: {
+              load: ['[tex]/ams']
+          }
+          };
+      </script>
+      <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>`;
+  
+    // Replace the matched pattern with the new script tags and configuration
+    const updatedContent = htmlContent.replace(pattern, replacement);
+  
+    return updatedContent;
+}
+  
+  
+
 export function openHtmlInWebview(htmlFilePath: string, context: vscode.ExtensionContext) {
     const panel = vscode.window.createWebviewPanel('texToHtmlView', 'TEX Preview', vscode.ViewColumn.Two, { enableScripts: true });
     
     let htmlContent = fs.readFileSync(htmlFilePath, 'utf8');
 
+    // Replace "\[...\]" by "\[\begin{equation}...\end{equation}\]" for MathJax
+    htmlContent = replaceEquationNotation(htmlContent);
 
-
+    htmlContent = replaceMathJaxScripts(htmlContent)
+    
+    console.log(htmlContent);
+    
     // Convert image paths to vscode-resource URIs
     htmlContent = htmlContent.replace(/img src="([^"]+)"/g, (_, p1) => {
         let imagePath = path.resolve(path.dirname(htmlFilePath), p1);
@@ -16,18 +65,6 @@ export function openHtmlInWebview(htmlFilePath: string, context: vscode.Extensio
         return `img src="${vscodeResourcePath}"`;
     });
 
-    // Option to include a custom font and other CSS directly
-    // const fontFaceCSS = `
-    // @import url("https://cdn.jsdelivr.net/gh/vsalvino/computer-modern@main/fonts/serif.css");
-    // body {
-    //     font-family: 'Computer Modern Serif', sans-serif;
-    // }
-    // `;
-    // htmlContent = htmlContent.replace('</head>', `<style>${fontFaceCSS}</style></head>`);
-
-    // Insert the <meta> tag for content security policy
-    // const metaTag =`<meta http-equiv="Content-Security-Policy" content="default-src *; style-src 'unsafe-inline'; script-src *; img-src *;">`;
-    // htmlContent = htmlContent.replace('<head>', `<head>\n\t${metaTag}`);
 
     // Debugging: Write the modified HTML back to the file system
     fs.writeFileSync(htmlFilePath, htmlContent, 'utf-8');
