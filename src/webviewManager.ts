@@ -7,6 +7,8 @@ export function openHtmlInWebview(htmlFilePath: string, context: vscode.Extensio
     
     let htmlContent = fs.readFileSync(htmlFilePath, 'utf8');
 
+
+
     // Convert image paths to vscode-resource URIs
     htmlContent = htmlContent.replace(/img src="([^"]+)"/g, (_, p1) => {
         let imagePath = path.resolve(path.dirname(htmlFilePath), p1);

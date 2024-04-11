@@ -4,6 +4,37 @@ import os
 import tempfile
 
 
+def get_iso_language_code(language_name: str) -> str:
+    """
+    Returns the ISO 639-1 code for a given language name.
+
+    Parameters:
+    language_name (str): The name of the language.
+
+    Returns:
+    str: The ISO 639-1 code of the language, or an empty string if not found.
+    """
+    language_map = {
+        "English": "en",
+        "French": "fr",
+        "Spanish": "es",
+        "German": "de",
+        "Chinese": "zh",
+    }
+
+    normalized_language_name = language_name.capitalize()
+    return language_map.get(normalized_language_name, "en")
+
+
+def resolve_language(tex_content):
+    language_pattern = re.compile(r"\\usepackage\[(.*?)\]{babel}")
+    language_match = language_pattern.search(tex_content)
+
+    if language_match:
+        language = language_match.group(1)
+        return get_iso_language_code(language)
+
+
 def resolve_inputs(tex_content, base_path):
     input_pattern = re.compile(r"\\input{([^}]+)}")
 
@@ -32,12 +63,12 @@ if __name__ == "__main__":
     try:
         with open(main_tex_file_path, "r") as main_tex_file:
             resolved_content = resolve_inputs(main_tex_file.read(), base_path)
-
+            language = resolve_language(resolved_content)
         with tempfile.NamedTemporaryFile(
             delete=False, mode="w", suffix=".tex"
         ) as tmpfile:
             tmpfile.write(resolved_content)
-            print(tmpfile.name)
+            print(tmpfile.name, language)
 
     except Exception as e:
         print(f"Error processing {main_tex_file_path}: {e}", file=sys.stderr)

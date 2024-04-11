@@ -16,5 +16,5 @@ On Windows with chocolatey:
 
 ```console
 $ choco install python3
-$ choco install python3
+$ choco install pandoc
 ```
