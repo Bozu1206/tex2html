@@ -36,17 +36,22 @@ def resolve_language(tex_content):
 
 
 def resolve_inputs(tex_content, base_path):
-    input_pattern = re.compile(r"\\input{([^}]+)}")
+    input_pattern = re.compile(r"\\input{([^}]+?)(\.tex|\.sty)?}")
 
     def replacer(match):
         file_name = match.group(1)
-        file_path = os.path.join(base_path, f"{file_name}.tex")
+        file_extension = match.group(2) if match.group(2) else ".tex"
+        file_path = os.path.join(base_path, f"{file_name}{file_extension}")
+
         try:
             with open(file_path, "r") as file:
                 file_base_path = os.path.dirname(file_path)
                 return resolve_inputs(file.read(), file_base_path)
         except FileNotFoundError:
-            print(f"Warning: {file_name}.tex not found in {base_path}", file=sys.stderr)
+            print(
+                f"Warning: {file_name}{file_extension} not found in {base_path}",
+                file=sys.stderr,
+            )
             return ""
 
     return re.sub(input_pattern, replacer, tex_content)

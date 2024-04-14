@@ -17,14 +17,24 @@
       {
         "command": "extension.convertTexToHtml",
         "title": "Convert TEX to HTML"
+      },
+      {
+        "command": "extension.generatePDF",
+        "title": "Generate PDF"
       }
     ],
     "menus": {
       "editor/title": [{
           "when": "resourceLangId == latex",
-          "command": "extension.convertTexToHtml",
+          "command": "extension.convertTexToHtml", 
+          "group": "navigation"
+      }, 
+      {
+          "when": "resourceLangId == latex",
+          "command": "extension.generatePDF", 
           "group": "navigation"
       }]
+
     }
   },
   "scripts": {

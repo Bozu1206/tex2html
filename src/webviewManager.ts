@@ -39,13 +39,9 @@ function replaceMathJaxScripts(htmlContent: string): string {
       <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>`;
   
     // Replace the matched pattern with the new script tags and configuration
-    const updatedContent = htmlContent.replace(pattern, replacement);
-  
-    return updatedContent;
+    return htmlContent.replace(pattern, replacement); ;
 }
   
-  
-
 export function openHtmlInWebview(htmlFilePath: string, context: vscode.ExtensionContext) {
     const panel = vscode.window.createWebviewPanel('texToHtmlView', 'TEX Preview', vscode.ViewColumn.Two, { enableScripts: true });
     
@@ -54,9 +50,8 @@ export function openHtmlInWebview(htmlFilePath: string, context: vscode.Extensio
     // Replace "\[...\]" by "\[\begin{equation}...\end{equation}\]" for MathJax
     htmlContent = replaceEquationNotation(htmlContent);
 
+    // Replace the MathJax script tags with a custom configuration
     htmlContent = replaceMathJaxScripts(htmlContent)
-    
-    console.log(htmlContent);
     
     // Convert image paths to vscode-resource URIs
     htmlContent = htmlContent.replace(/img src="([^"]+)"/g, (_, p1) => {
@@ -65,10 +60,8 @@ export function openHtmlInWebview(htmlFilePath: string, context: vscode.Extensio
         return `img src="${vscodeResourcePath}"`;
     });
 
-
     // Debugging: Write the modified HTML back to the file system
     fs.writeFileSync(htmlFilePath, htmlContent, 'utf-8');
-
     panel.webview.html = htmlContent;
 }
 
