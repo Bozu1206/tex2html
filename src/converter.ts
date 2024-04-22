@@ -9,8 +9,11 @@ export async function convertTexToHtml(texFilePath: string, context: vscode.Exte
     
     // Preprocess .tex file
     const ret = await execCommand(`python "${scriptPath}" "${texFilePath}"`);
+    console.log(ret)
     const tempFilePath = ret.split(" ")[0].trim();
     const lang = ret.split(" ")[1].trim();
+
+    console.log(lang)
     
     // Convert to HTML
     await execCommand(`pandoc "${tempFilePath}" --metadata lang="${lang}" --mathjax -t html -N -s -o "${htmlFilePath}"`);

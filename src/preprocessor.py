@@ -5,20 +5,15 @@ import tempfile
 
 
 def get_iso_language_code(language_name: str) -> str:
-    """
-    Returns the ISO 639-1 code for a given language name.
-
-    Parameters:
-    language_name (str): The name of the language.
-
-    Returns:
-    str: The ISO 639-1 code of the language, or an empty string if not found.
-    """
     language_map = {
+        "Anglais": "en",
+        "German": "de",
+        "Allemand": "de",
+        "Francais": "fr",
         "English": "en",
         "French": "fr",
         "Spanish": "es",
-        "German": "de",
+        "Ngerman": "de",
         "Chinese": "zh",
     }
 
