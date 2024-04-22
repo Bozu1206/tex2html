@@ -24,17 +24,18 @@
       }
     ],
     "menus": {
-      "editor/title": [{
+      "editor/title": [
+        {
           "when": "resourceLangId == latex",
-          "command": "extension.convertTexToHtml", 
+          "command": "extension.convertTexToHtml",
           "group": "navigation"
-      }, 
-      {
+        },
+        {
           "when": "resourceLangId == latex",
-          "command": "extension.generatePDF", 
+          "command": "extension.generatePDF",
           "group": "navigation"
-      }]
-
+        }
+      ]
     }
   },
   "scripts": {
@@ -46,14 +47,21 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.87.0",
+    "@types/chai": "^4.3.14",
+    "@types/jsdom": "^21.1.6",
     "@types/mocha": "^10.0.6",
     "@types/node": "18.x",
+    "@types/vscode": "^1.87.0",
     "@typescript-eslint/eslint-plugin": "^7.4.0",
     "@typescript-eslint/parser": "^7.4.0",
-    "eslint": "^8.57.0",
-    "typescript": "^5.3.3",
     "@vscode/test-cli": "^0.0.8",
-    "@vscode/test-electron": "^2.3.9"
+    "@vscode/test-electron": "^2.3.9",
+    "chai": "^5.1.0",
+    "eslint": "^8.57.0",
+    "mocha": "^10.4.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "jsdom": "^24.0.0"
   }
 }

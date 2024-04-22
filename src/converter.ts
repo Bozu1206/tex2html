@@ -9,14 +9,12 @@ export async function convertTexToHtml(texFilePath: string, context: vscode.Exte
     
     // Preprocess .tex file
     const ret = await execCommand(`python "${scriptPath}" "${texFilePath}"`);
-    console.log(ret)
     const tempFilePath = ret.split(" ")[0].trim();
     const lang = ret.split(" ")[1].trim();
 
-    console.log(lang)
     
     // Convert to HTML
-    await execCommand(`pandoc "${tempFilePath}" --metadata lang="${lang}" --mathjax -t html -N -s -o "${htmlFilePath}"`);
+    await execCommand(`pandoc "${tempFilePath}" -M link-citations=true --metadata lang="${lang}" --mathjax -t html -N -s -o "${htmlFilePath}"`);
     
     // Display in webview
     openHtmlInWebview(htmlFilePath, context);
@@ -33,8 +31,6 @@ export async function convertTexToPDF(texFilePath: string, context: vscode.Exten
     const ret = await execCommand(`python "${scriptPath}" "${texFilePath}"`);
     const tempFilePath = ret.split(" ")[0].trim();
     const lang = ret.split(" ")[1].trim();
-
-    console.log(tempFilePath, pdf)
    
     // Convert to PDF
     await execCommand(`pdflatex -output-directory="${path.dirname(texFilePath)}" -jobname="${pdf}" "${tempFilePath}"`);

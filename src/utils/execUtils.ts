@@ -6,7 +6,6 @@ export function execCommand(command: string): Promise<string> {
             if (err) {
                 reject(err);
             } else {
-                console.log(stderr.trim())
                 resolve(stdout.trim());
             }
         });

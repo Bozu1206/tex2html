@@ -15,7 +15,7 @@ export function checkDependencies(): void {
                     const guideUri = vscode.Uri.file(guidePath);
                     
                     // Open the markdown file in a new editor tab
-                    vscode.commands.executeCommand('markdown.showPreview', guideUri)
+                    vscode.commands.executeCommand('markdown.showPreview', guideUri);
                 }
             });
         } else {

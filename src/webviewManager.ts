@@ -1,6 +1,24 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import { JSDOM } from 'jsdom';
+
+export function updateEquationIds(htmlContent: string): string {
+    const dom = new JSDOM(htmlContent);
+    const document = dom.window.document;
+    const spans = document.querySelectorAll('span.math.display');
+
+    spans.forEach(span => {
+        const equationContent = span.textContent || '';
+        const labelMatch = equationContent.match(/\\label\{([^}]+)\}/);
+        if (labelMatch) {
+            const label = labelMatch[1];
+            span.id = label;
+        }
+    });
+
+    return dom.serialize();
+}
 
 function replaceEquationNotation(htmlContent: string): string {
     // Define the regular expression to match the pattern \[ ... \]
@@ -74,12 +92,15 @@ export function openHtmlInWebview(htmlFilePath: string, context: vscode.Extensio
     const panel = vscode.window.createWebviewPanel('texToHtmlView', 'TEX Preview', vscode.ViewColumn.Two, { enableScripts: true });
     
     let htmlContent = fs.readFileSync(htmlFilePath, 'utf8');
+    
+    // Update equation IDs based on LaTeX labels
+    htmlContent = updateEquationIds(htmlContent);
 
     // Replace "\[...\]" by "\[\begin{equation}...\end{equation}\]" for MathJax
     htmlContent = replaceEquationNotation(htmlContent);
 
     // Replace the MathJax script tags with a custom configuration
-    htmlContent = replaceMathJaxScripts(htmlContent)
+    htmlContent = replaceMathJaxScripts(htmlContent);
     
     // Convert image paths to vscode-resource URIs
     htmlContent = htmlContent.replace(/img src="([^"]+)"/g, (_, p1) => {
