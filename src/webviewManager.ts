@@ -23,6 +23,34 @@ function replaceMathJaxScripts(htmlContent: string): string {
     // Define the replacement string, which includes the new script configuration for MathJax
     const replacement = `<script>
           window.MathJax = {
+            options: {
+                enableMenu: true,
+                menuOptions: {
+                    settings: {
+                        texHints: true,
+                        semantics: false,
+                        zoom: 'NoZoom',
+                        zscale: '200%',
+                        renderer: 'CHTML',
+                        alt: false,
+                        cmd: false,
+                        ctrl: false,
+                        shift: false,
+                        scale: 1,
+                        inTabOrder: true,
+                        assistiveMml: true,
+                        collapsible: false,
+                        explorer: false
+                    },
+                    annotationTypes: {
+                        TeX: ['TeX', 'LaTeX', 'application/x-tex'],
+                        StarMath: ['StarMath 5.0'],
+                        Maple: ['Maple'],
+                        ContentMathML: ['MathML-Content', 'application/mathml-content+xml'],
+                        OpenMath: ['OpenMath']
+                    }
+                }
+            },
           tex: {
             tags: "ams", // This enables automatic equation numbering
             inlineMath: [["$", "$"], ["\\\\(", "\\\\)"]],
