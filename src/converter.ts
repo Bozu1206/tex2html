@@ -12,7 +12,6 @@ export async function convertTexToHtml(texFilePath: string, context: vscode.Exte
     const tempFilePath = ret.split(" ")[0].trim();
     const lang = ret.split(" ")[1].trim();
 
-    
     // Convert to HTML
     await execCommand(`pandoc "${tempFilePath}" -M link-citations=true --metadata lang="${lang}" --mathjax -t html -N -s -o "${htmlFilePath}"`);
     
@@ -22,10 +21,7 @@ export async function convertTexToHtml(texFilePath: string, context: vscode.Exte
 
 export async function convertTexToPDF(texFilePath: string, context: vscode.ExtensionContext) {
     const scriptPath = path.join(__dirname, '..', 'out', 'preprocessor.py');
-
-    // Get the name of the .tex file
     const pdf = path.basename(texFilePath).replace('.tex', '');
-
     
     // Preprocess .tex file
     const ret = await execCommand(`python "${scriptPath}" "${texFilePath}"`);

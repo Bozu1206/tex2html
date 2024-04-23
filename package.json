@@ -3,7 +3,7 @@
   "displayName": "tex2html",
   "publisher": "ATC",
   "description": "tex2html extension for vscode",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "engines": {
     "vscode": "^1.87.0"
   },

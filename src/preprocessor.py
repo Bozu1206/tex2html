@@ -52,6 +52,16 @@ def resolve_inputs(tex_content, base_path):
     return re.sub(input_pattern, replacer, tex_content)
 
 
+def convert_makeatletter_to_comment(latex_content):
+    pattern = re.compile(r"\\makeatletter(.*?)\\makeatother", re.DOTALL)
+
+    def comment_replacer(match):
+        commented_content = "% " + "\n% ".join(match.group(1).split("\n"))
+        return f"\\makeatletter\n{commented_content}\n\\makeatother"
+
+    return pattern.sub(comment_replacer, latex_content)
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python preprocessor.py <path_to_main_tex_file>")
@@ -63,6 +73,7 @@ if __name__ == "__main__":
     try:
         with open(main_tex_file_path, "r") as main_tex_file:
             resolved_content = resolve_inputs(main_tex_file.read(), base_path)
+            resolved_content = convert_makeatletter_to_comment(resolved_content)
             language = resolve_language(resolved_content)
         with tempfile.NamedTemporaryFile(
             delete=False, mode="w", suffix=".tex"
