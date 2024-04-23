@@ -21,8 +21,6 @@ export function updateEquationIds(htmlContent: string): string {
 }
 
 function replaceEquationNotation(htmlContent: string): string {
-    // Define the regular expression to match the pattern \[ ... \]
-    // Using the 's' flag for dotAll mode, so '.' matches newline characters as well
     // The '?' in '.*?' makes the matching non-greedy
     const pattern = /\\\[(.*?)\\\]/gs;
   
@@ -35,10 +33,7 @@ function replaceEquationNotation(htmlContent: string): string {
 }
   
 function replaceMathJaxScripts(htmlContent: string): string {
-    // Define the regular expression to match the exact script tags
     const pattern = /<script src="https:\/\/cdnjs.cloudflare.com\/polyfill\/v3\/polyfill.min.js\?features=es6"><\/script>\s*<script\s+src="https:\/\/cdn.jsdelivr.net\/npm\/mathjax@3\/es5\/tex-chtml-full.js"\s+type="text\/javascript"><\/script>/gs;
-  
-    // Define the replacement string, which includes the new script configuration for MathJax
     const replacement = `<script>
           window.MathJax = {
             options: {
@@ -84,14 +79,28 @@ function replaceMathJaxScripts(htmlContent: string): string {
       </script>
       <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>`;
   
-    // Replace the matched pattern with the new script tags and configuration
     return htmlContent.replace(pattern, replacement); ;
+}
+
+function handleTheme(htmlContent: string) {
+    const isDarkTheme = vscode.window.activeColorTheme.kind !== vscode.ColorThemeKind.Light
+
+    if (isDarkTheme) {
+        htmlContent = htmlContent.replace(
+            /html\s*{\s*color:\s*#1a1a1a;\s*background-color:\s*#fdfdfd;\s*}/g,
+            'html { color: #ffffff; background-color: #1a1a1a; }'
+        );
+    }
+    return htmlContent;
 }
   
 export function openHtmlInWebview(htmlFilePath: string, context: vscode.ExtensionContext) {
     const panel = vscode.window.createWebviewPanel('texToHtmlView', 'TEX Preview', vscode.ViewColumn.Two, { enableScripts: true });
     
     let htmlContent = fs.readFileSync(htmlFilePath, 'utf8');
+
+    // Handle theme-specific CSS
+    htmlContent = handleTheme(htmlContent);
     
     // Update equation IDs based on LaTeX labels
     htmlContent = updateEquationIds(htmlContent);
@@ -109,7 +118,7 @@ export function openHtmlInWebview(htmlFilePath: string, context: vscode.Extensio
         return `img src="${vscodeResourcePath}"`;
     });
 
-    // Debugging: Write the modified HTML back to the file system
+    // Debugging (feature ;-) ?): Write the modified HTML back to the file system
     fs.writeFileSync(htmlFilePath, htmlContent, 'utf-8');
     panel.webview.html = htmlContent;
 }
