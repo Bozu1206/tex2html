@@ -13,14 +13,36 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
+    "keybindings": [
       {
         "command": "extension.convertTexToHtml",
-        "title": "Convert TEX to HTML"
+        "key": "ctrl+alt+h",
+        "mac": "cmd+alt+h",
+        "when": "editorTextFocus && resourceLangId == latex"
       },
       {
         "command": "extension.generatePDF",
-        "title": "Generate PDF"
+        "key": "ctrl+alt+p",
+        "mac": "cmd+alt+p",
+        "when": "editorTextFocus && resourceLangId == latex"
+      }
+    ],
+    "commands": [
+      {
+        "command": "extension.convertTexToHtml",
+        "title": "Convert TEX to HTML",
+        "icon": {
+          "light": "./images/light/tex-html.svg",
+          "dark": "./images/dark/tex-html.svg"
+        }
+      },
+      {
+        "command": "extension.generatePDF",
+        "title": "Generate PDF",
+        "icon": {
+          "light": "./images/light/pdf.svg",
+          "dark": "./images/dark/pdf.svg"
+        }
       }
     ],
     "menus": {
