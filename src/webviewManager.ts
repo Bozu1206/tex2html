@@ -77,7 +77,9 @@ function replaceMathJaxScripts(htmlContent: string): string {
           }
           };
       </script>
-      <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>`;
+      <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+      <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css">
+      <script src="https://tikzjax.com/v1/tikzjax.js"></script>`;
   
     return htmlContent.replace(pattern, replacement); ;
 }
@@ -93,23 +95,35 @@ function handleTheme(htmlContent: string) {
     }
     return htmlContent;
 }
+
+function convertTikZInHTML(htmlString: string): string {
+    const tikzRegex = /<pre>\s*<code>(\s*\\begin{tikzpicture}[\s\S]*?\\end{tikzpicture}\s*)<\/code>\s*<\/pre>/g;
+
+    const replaceWithScript = (match: string, tikzContent: string) => {
+        return `<script type="text/tikz">${tikzContent}</script>`;
+    };
+
+    return htmlString.replace(tikzRegex, replaceWithScript);
+}
+
+function updateHtmlTitle(htmlContent: string, title: string): string {
+    const dom = new JSDOM(htmlContent);
+    const document = dom.window.document;
+    document.title = title;
+    return dom.serialize();
+}
   
 export function openHtmlInWebview(htmlFilePath: string, context: vscode.ExtensionContext) {
     const panel = vscode.window.createWebviewPanel('texToHtmlView', 'TEX Preview', vscode.ViewColumn.Two, { enableScripts: true });
     
     let htmlContent = fs.readFileSync(htmlFilePath, 'utf8');
 
-    // Handle theme-specific CSS
-    htmlContent = handleTheme(htmlContent);
-    
-    // Update equation IDs based on LaTeX labels
-    htmlContent = updateEquationIds(htmlContent);
-
-    // Replace "\[...\]" by "\[\begin{equation}...\end{equation}\]" for MathJax
-    htmlContent = replaceEquationNotation(htmlContent);
-
-    // Replace the MathJax script tags with a custom configuration
+    htmlContent = handleTheme(htmlContent);    
+    htmlContent = updateHtmlTitle(htmlContent, path.basename(htmlFilePath, '.html') || 'TEX Preview');
     htmlContent = replaceMathJaxScripts(htmlContent);
+    htmlContent = updateEquationIds(htmlContent);
+    htmlContent = convertTikZInHTML(htmlContent);
+    htmlContent = replaceEquationNotation(htmlContent);
     
     // Convert image paths to vscode-resource URIs
     htmlContent = htmlContent.replace(/img src="([^"]+)"/g, (_, p1) => {

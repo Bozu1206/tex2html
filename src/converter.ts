@@ -8,7 +8,7 @@ export async function convertTexToHtml(texFilePath: string, context: vscode.Exte
     const htmlFilePath = texFilePath.replace('.tex', '.html');
     
     // Preprocess .tex file
-    const ret = await execCommand(`python "${scriptPath}" "${texFilePath}"`);
+    const ret = await execCommand(`python "${scriptPath}" "${texFilePath}" html`);
     const tempFilePath = ret.split(" ")[0].trim();
     const lang = ret.split(" ")[1].trim();
 
@@ -24,7 +24,7 @@ export async function convertTexToPDF(texFilePath: string, context: vscode.Exten
     const pdf = path.basename(texFilePath).replace('.tex', '');
     
     // Preprocess .tex file
-    const ret = await execCommand(`python "${scriptPath}" "${texFilePath}"`);
+    const ret = await execCommand(`python "${scriptPath}" "${texFilePath}" pdf`);
     const tempFilePath = ret.split(" ")[0].trim();
     const lang = ret.split(" ")[1].trim();
    

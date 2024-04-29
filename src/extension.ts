@@ -12,5 +12,4 @@ export function activate(context: vscode.ExtensionContext) {
     checkDependencies();
 }
 
-
 export function deactivate() {}

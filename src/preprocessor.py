@@ -62,18 +62,37 @@ def convert_makeatletter_to_comment(latex_content):
     return pattern.sub(comment_replacer, latex_content)
 
 
+def convert_tikz_to_verbatim(tex_content):
+    tikz_pattern = r"\\begin{tikzpicture}.*?\\end{tikzpicture}"
+
+    def wrap_in_verbatim(match):
+        tikz_content = match.group(0)
+        return f"\\begin{{verbatim}}{tikz_content}\\end{{verbatim}}"
+
+    converted_content = re.sub(
+        tikz_pattern, wrap_in_verbatim, tex_content, flags=re.DOTALL
+    )
+
+    return converted_content
+
+
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 3:
         print("Usage: python preprocessor.py <path_to_main_tex_file>")
         sys.exit(1)
 
     main_tex_file_path = sys.argv[1]
+    format = sys.argv[2]
     base_path = os.path.dirname(main_tex_file_path)
 
     try:
         with open(main_tex_file_path, "r") as main_tex_file:
             resolved_content = resolve_inputs(main_tex_file.read(), base_path)
             resolved_content = convert_makeatletter_to_comment(resolved_content)
+
+            if format == "html":
+                resolved_content = convert_tikz_to_verbatim(resolved_content)
+
             language = resolve_language(resolved_content)
         with tempfile.NamedTemporaryFile(
             delete=False, mode="w", suffix=".tex"
