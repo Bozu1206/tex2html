@@ -31,7 +31,9 @@ def resolve_language(tex_content):
 
 
 def resolve_inputs(tex_content, base_path):
-    input_pattern = re.compile(r"\\input{([^}]+?)(\.tex|\.sty)?}")
+    input_pattern = re.compile(
+        r"^(?![^%\n]*%)\\input{([^}]+?)(\.tex|\.sty)?}", re.MULTILINE
+    )
 
     def replacer(match):
         file_name = match.group(1)
@@ -53,27 +55,45 @@ def resolve_inputs(tex_content, base_path):
 
 
 def convert_makeatletter_to_comment(latex_content):
-    pattern = re.compile(r"\\makeatletter(.*?)\\makeatother", re.DOTALL)
+    pattern = re.compile(r"\\makeatletter(.*?)\\makeatother", re.DOTALL | re.MULTILINE)
 
     def comment_replacer(match):
         commented_content = "% " + "\n% ".join(match.group(1).split("\n"))
         return f"\\makeatletter\n{commented_content}\n\\makeatother"
 
-    return pattern.sub(comment_replacer, latex_content)
+    result_lines = []
+    for line in latex_content.splitlines():
+        if line.strip().startswith("%"):
+            result_lines.append(line)
+        else:
+            line = pattern.sub(comment_replacer, line)
+            result_lines.append(line)
+
+    return "\n".join(result_lines)
 
 
 def convert_tikz_to_verbatim(tex_content):
-    tikz_pattern = r"\\begin{tikzpicture}.*?\\end{tikzpicture}"
+    tikz_pattern = re.compile(r"\\begin{tikzpicture}.*?\\end{tikzpicture}", re.DOTALL)
 
     def wrap_in_verbatim(match):
         tikz_content = match.group(0)
         return f"\\begin{{verbatim}}{tikz_content}\\end{{verbatim}}"
 
-    converted_content = re.sub(
-        tikz_pattern, wrap_in_verbatim, tex_content, flags=re.DOTALL
-    )
+    result_lines = []
+    in_comment_block = False
 
-    return converted_content
+    for line in tex_content.splitlines():
+        if line.strip().startswith("%"):
+            in_comment_block = True
+            result_lines.append(line)
+        else:
+            if in_comment_block:
+                in_comment_block = False
+
+            line = tikz_pattern.sub(wrap_in_verbatim, line)
+            result_lines.append(line)
+
+    return "\n".join(result_lines)
 
 
 if __name__ == "__main__":
@@ -88,12 +108,13 @@ if __name__ == "__main__":
     try:
         with open(main_tex_file_path, "r") as main_tex_file:
             resolved_content = resolve_inputs(main_tex_file.read(), base_path)
-            resolved_content = convert_makeatletter_to_comment(resolved_content)
 
             if format == "html":
+                resolved_content = convert_makeatletter_to_comment(resolved_content)
                 resolved_content = convert_tikz_to_verbatim(resolved_content)
 
             language = resolve_language(resolved_content)
+
         with tempfile.NamedTemporaryFile(
             delete=False, mode="w", suffix=".tex"
         ) as tmpfile:

@@ -21,14 +21,10 @@ export function updateEquationIds(htmlContent: string): string {
 }
 
 function replaceEquationNotation(htmlContent: string): string {
-    // The '?' in '.*?' makes the matching non-greedy
     const pattern = /\\\[(.*?)\\\]/gs;
-  
-    // Replace each match with the modified LaTeX equation format
     const updatedContent = htmlContent.replace(pattern, (match, equationContent) => {
       return `\\[\\begin{equation}${equationContent}\\end{equation}\\]`;
     });
-  
     return updatedContent;
 }
   
@@ -115,15 +111,18 @@ function updateHtmlTitle(htmlContent: string, title: string): string {
   
 export function openHtmlInWebview(htmlFilePath: string, context: vscode.ExtensionContext) {
     const panel = vscode.window.createWebviewPanel('texToHtmlView', 'TEX Preview', vscode.ViewColumn.Two, { enableScripts: true });
-    
     let htmlContent = fs.readFileSync(htmlFilePath, 'utf8');
 
+    // TODO: Handle error and inform user in VSCode and in HTML 
+    // Question: How to inform user that LaTeX packages are missing in MathJax?
+
     htmlContent = handleTheme(htmlContent);    
+    htmlContent = htmlContent.replace(/max-width: 36em;/g, 'max-width: 50em;');
     htmlContent = updateHtmlTitle(htmlContent, path.basename(htmlFilePath, '.html') || 'TEX Preview');
+    htmlContent = replaceEquationNotation(htmlContent);
     htmlContent = replaceMathJaxScripts(htmlContent);
     htmlContent = updateEquationIds(htmlContent);
     htmlContent = convertTikZInHTML(htmlContent);
-    htmlContent = replaceEquationNotation(htmlContent);
     
     // Convert image paths to vscode-resource URIs
     htmlContent = htmlContent.replace(/img src="([^"]+)"/g, (_, p1) => {
@@ -134,6 +133,13 @@ export function openHtmlInWebview(htmlFilePath: string, context: vscode.Extensio
 
     // Debugging (feature ;-) ?): Write the modified HTML back to the file system
     fs.writeFileSync(htmlFilePath, htmlContent, 'utf-8');
+
+    vscode.window.showInformationMessage(
+        'Pandoc is using MathJax to render equations. \
+         Please note that MathJax does not support all LaTeX commands. \
+         For more information, visit https://docs.mathjax.org/en/latest/input/tex/extensions/index.html.'
+    )
+
     panel.webview.html = htmlContent;
 }
 
