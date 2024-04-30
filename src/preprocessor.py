@@ -57,21 +57,13 @@ def resolve_inputs(tex_content, base_path):
 
 
 def convert_makeatletter_to_comment(latex_content):
-    pattern = re.compile(r"\\makeatletter(.*?)\\makeatother", re.DOTALL | re.MULTILINE)
+    pattern = re.compile(r"\\makeatletter(.*?)\\makeatother", re.DOTALL)
 
     def comment_replacer(match):
         commented_content = "% " + "\n% ".join(match.group(1).split("\n"))
         return f"\\makeatletter\n{commented_content}\n\\makeatother"
 
-    result_lines = []
-    for line in latex_content.splitlines():
-        if line.strip().startswith("%"):
-            result_lines.append(line)
-        else:
-            line = pattern.sub(comment_replacer, line)
-            result_lines.append(line)
-
-    return "\n".join(result_lines)
+    return pattern.sub(comment_replacer, latex_content)
 
 
 def convert_tikz_to_verbatim(tex_content):
@@ -108,7 +100,7 @@ def find_bib_info(latex_content):
         if re.search(r"\\bibliography{", latex_content):
             bib_package = "bibtex"
 
-    bib_file = "!"
+    bib_file = "?"
     bib_file_match = re.search(r"\\bibliography{(.+?)}", latex_content)
     if bib_file_match:
         bib_file = bib_file_match.group(1) + ".bib"
@@ -129,7 +121,7 @@ if __name__ == "__main__":
     format = sys.argv[2]
     base_path = os.path.dirname(main_tex_file_path)
 
-    bibliography = ("?", "x")
+    bibliography = ("?", "?")
 
     try:
         with open(main_tex_file_path, "r") as main_tex_file:
