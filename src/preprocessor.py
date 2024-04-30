@@ -29,6 +29,8 @@ def resolve_language(tex_content):
         language = language_match.group(1)
         return get_iso_language_code(language)
 
+    return "en"
+
 
 def resolve_inputs(tex_content, base_path):
     input_pattern = re.compile(
@@ -96,6 +98,28 @@ def convert_tikz_to_verbatim(tex_content):
     return "\n".join(result_lines)
 
 
+def find_bib_info(latex_content):
+    bib_package = "?"
+    if re.search(r"\\usepackage.*{natbib}", latex_content):
+        bib_package = "natbib"
+    elif re.search(r"\\usepackage.*{biblatex}", latex_content):
+        bib_package = "biblatex"
+    else:
+        if re.search(r"\\bibliography{", latex_content):
+            bib_package = "bibtex"
+
+    bib_file = "!"
+    bib_file_match = re.search(r"\\bibliography{(.+?)}", latex_content)
+    if bib_file_match:
+        bib_file = bib_file_match.group(1) + ".bib"
+    else:
+        bib_file_match = re.search(r"\\addbibresource{(.+?\.bib)}", latex_content)
+        if bib_file_match:
+            bib_file = bib_file_match.group(1)
+
+    return (bib_file, bib_package)
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print("Usage: python preprocessor.py <path_to_main_tex_file>")
@@ -105,6 +129,8 @@ if __name__ == "__main__":
     format = sys.argv[2]
     base_path = os.path.dirname(main_tex_file_path)
 
+    bibliography = ("?", "x")
+
     try:
         with open(main_tex_file_path, "r") as main_tex_file:
             resolved_content = resolve_inputs(main_tex_file.read(), base_path)
@@ -113,13 +139,14 @@ if __name__ == "__main__":
                 resolved_content = convert_makeatletter_to_comment(resolved_content)
                 resolved_content = convert_tikz_to_verbatim(resolved_content)
 
+            bibliography = find_bib_info(resolved_content)
             language = resolve_language(resolved_content)
 
         with tempfile.NamedTemporaryFile(
             delete=False, mode="w", suffix=".tex"
         ) as tmpfile:
             tmpfile.write(resolved_content)
-            print(tmpfile.name, language)
+            print(tmpfile.name, language, bibliography[0], bibliography[1])
 
     except Exception as e:
         print(f"Error processing {main_tex_file_path}: {e}", file=sys.stderr)

@@ -11,9 +11,13 @@ export async function convertTexToHtml(texFilePath: string, context: vscode.Exte
     const ret = await execCommand(`python "${scriptPath}" "${texFilePath}" html`);
     const tempFilePath = ret.split(" ")[0].trim();
     const lang = ret.split(" ")[1].trim();
+    const bib_filename = ret.split(" ")[2].trim();
+    const bib_engine = ret.split(" ")[3].trim(); 
+    const bib_file_path = path.join(path.dirname(texFilePath), bib_filename);
+    const cslFilePath = path.join(__dirname, '..', 'out', 'citation.csl');
 
     // Convert to HTML
-    await execCommand(`pandoc "${tempFilePath}" -M link-citations=true --metadata lang="${lang}" --mathjax -t html -N -s -o "${htmlFilePath}"`);
+    await execCommand(`pandoc "${tempFilePath}" -M link-citations=true --bibliography="${bib_file_path}" --citeproc --"${bib_engine}" --csl="${cslFilePath}" --metadata lang="${lang}" --mathjax -t html -N -s -o "${htmlFilePath}"`);
     
     // Display in webview
     openHtmlInWebview(htmlFilePath, context);
@@ -27,8 +31,14 @@ export async function convertTexToPDF(texFilePath: string, context: vscode.Exten
     const ret = await execCommand(`python "${scriptPath}" "${texFilePath}" pdf`);
     const tempFilePath = ret.split(" ")[0].trim();
     const lang = ret.split(" ")[1].trim();
-   
+    const bib_filename = ret.split(" ")[2].trim();
+    let bib_engine = ret.split(" ")[3].trim(); 
+    const bib_file_path = path.join(path.dirname(texFilePath), bib_filename);    
+    bib_engine == "biblatex" ? bib_engine = "biber" : bib_engine = "bibtex";
+        
     // Convert to PDF
+    await execCommand(`pdflatex -output-directory="${path.dirname(texFilePath)}" -jobname="${pdf}" "${tempFilePath}"`);
+    await execCommand(`cd "${path.dirname(texFilePath)}" && ${bib_engine} "${pdf}"`);
     await execCommand(`pdflatex -output-directory="${path.dirname(texFilePath)}" -jobname="${pdf}" "${tempFilePath}"`);
     await execCommand(`pdflatex -output-directory="${path.dirname(texFilePath)}" -jobname="${pdf}" "${tempFilePath}"`);
     

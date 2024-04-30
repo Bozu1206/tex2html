@@ -123,6 +123,8 @@ export function openHtmlInWebview(htmlFilePath: string, context: vscode.Extensio
     htmlContent = replaceMathJaxScripts(htmlContent);
     htmlContent = updateEquationIds(htmlContent);
     htmlContent = convertTikZInHTML(htmlContent);
+
+    // TODO: add references section / find why pandoc is not adding it
     
     // Convert image paths to vscode-resource URIs
     htmlContent = htmlContent.replace(/img src="([^"]+)"/g, (_, p1) => {
