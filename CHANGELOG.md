@@ -6,6 +6,7 @@ All notable changes to the "tex2html" extension will be documented in this file.
 
 - Fixing bugs with commented lines in the preprocessor
 - Add title to references section with Pandoc
+- Add progress bar during the conversion TEX -> HTML
 
 ## Released
 
