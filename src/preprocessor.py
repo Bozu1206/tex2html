@@ -114,7 +114,7 @@ def find_bib_info(latex_content):
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("Usage: python preprocessor.py <path_to_main_tex_file>")
+        print("Usage: python preprocessor.py <path_to_main_tex_file> format")
         sys.exit(1)
 
     main_tex_file_path = sys.argv[1]

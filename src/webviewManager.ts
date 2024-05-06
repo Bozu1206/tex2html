@@ -86,7 +86,7 @@ function handleTheme(htmlContent: string) {
     if (isDarkTheme) {
         htmlContent = htmlContent.replace(
             /html\s*{\s*color:\s*#1a1a1a;\s*background-color:\s*#fdfdfd;\s*}/g,
-            'html { color: #ffffff; background-color: #1a1a1a; }'
+            'html { color: #ffffff; background-color: #1a1a1a; }\n .citation>a {color: skyblue;}'
         );
     }
     return htmlContent;
@@ -116,6 +116,7 @@ export function openHtmlInWebview(htmlFilePath: string, context: vscode.Extensio
     // TODO: Handle error and inform user in VSCode and in HTML 
     // Question: How to inform user that LaTeX packages are missing in MathJax?
 
+    // NUMBERING EQUATIONS AND SEPARATE TAGS AND EQUATIONS
     htmlContent = handleTheme(htmlContent);    
     htmlContent = htmlContent.replace(/max-width: 36em;/g, 'max-width: 50em;');
     htmlContent = updateHtmlTitle(htmlContent, path.basename(htmlFilePath, '.html') || 'TEX Preview');
@@ -123,8 +124,6 @@ export function openHtmlInWebview(htmlFilePath: string, context: vscode.Extensio
     htmlContent = replaceMathJaxScripts(htmlContent);
     htmlContent = updateEquationIds(htmlContent);
     htmlContent = convertTikZInHTML(htmlContent);
-
-    // TODO: add references section / find why pandoc is not adding it
     
     // Convert image paths to vscode-resource URIs
     htmlContent = htmlContent.replace(/img src="([^"]+)"/g, (_, p1) => {

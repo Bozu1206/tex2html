@@ -15,12 +15,14 @@ export async function convertTexToHtml(texFilePath: string, context: vscode.Exte
     const bib_engine = ret.split(" ")[3].trim(); 
     const bib_file_path = path.join(path.dirname(texFilePath), bib_filename);
     const cslFilePath = path.join(__dirname, '..', 'out', 'citation.csl');
+    const ref = lang == "en" ? "References" : "Références";
 
+    // Debugging purposes
     console.log(`tempFilePath: ${tempFilePath}`);
 
     // Convert to HTML
     if (bib_engine != "?" && bib_filename != "?") {
-        await execCommand(`pandoc "${tempFilePath}" -M link-citations=true --bibliography="${bib_file_path}" --citeproc --csl="${cslFilePath}" --metadata lang="${lang}" --mathjax -t html -N -s -o "${htmlFilePath}"`);
+        await execCommand(`pandoc "${tempFilePath}" -M link-citations=true --bibliography="${bib_file_path}" --citeproc --csl="${cslFilePath}" --metadata lang="${lang}" --metadata reference-section-title="${ref}" --mathjax -t html -N -s -o "${htmlFilePath}"`);
     } else {
         await execCommand(`pandoc "${tempFilePath}" -M link-citations=true --metadata lang="${lang}" --mathjax -t html -N -s -o "${htmlFilePath}"`);
     }
@@ -50,6 +52,7 @@ export async function convertTexToPDF(texFilePath: string, context: vscode.Exten
         await execCommand(`pdflatex -output-directory="${path.dirname(texFilePath)}" -jobname="${pdf}" "${tempFilePath}"`);
         await execCommand(`pdflatex -output-directory="${path.dirname(texFilePath)}" -jobname="${pdf}" "${tempFilePath}"`);
     } else {
+        vscode.window.showErrorMessage("Please add a bibliography file to your .tex file.");
         await execCommand(`pdflatex -output-directory="${path.dirname(texFilePath)}" -jobname="${pdf}" "${tempFilePath}"`);
         await execCommand(`pdflatex -output-directory="${path.dirname(texFilePath)}" -jobname="${pdf}" "${tempFilePath}"`);
     }
