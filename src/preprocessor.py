@@ -34,7 +34,7 @@ def resolve_language(tex_content):
 
 def resolve_inputs(tex_content, base_path):
     input_pattern = re.compile(
-        r"^(?![^%\n]*%)\\input{([^}]+?)(\.tex|\.sty)?}", re.MULTILINE
+        r"^\\input{([^}]+?)(\.tex|\.sty)?}(?!.*%.*\1)", re.MULTILINE
     )
 
     def replacer(match):

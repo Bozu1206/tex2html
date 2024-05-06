@@ -41,7 +41,8 @@ export async function convertTexToPDF(texFilePath: string, context: vscode.Exten
     let bib_engine = ret.split(" ")[3].trim();
     const bib_file_path = path.join(path.dirname(texFilePath), bib_filename);
     bib_engine == "biblatex" ? bib_engine = "biber" : bib_engine = "bibtex";
-       
+    
+    //TODO: DEBUG THIS WITH A WINDOW MACHINE
     if (bib_engine != "?" && bib_filename != "?") {
         // Convert to PDF
         await execCommand(`pdflatex -output-directory="${path.dirname(texFilePath)}" -jobname="${pdf}" "${tempFilePath}"`);
