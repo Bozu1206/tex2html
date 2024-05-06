@@ -61,7 +61,6 @@ function replaceMathJaxScripts(htmlContent: string): string {
                 }
             },
           tex: {
-            tags: "ams", // This enables automatic equation numbering
             inlineMath: [["$", "$"], ["\\\\(", "\\\\)"]],
             displayMath: [["$$", "$$"], ["\\\\[", "\\\\]"]]
           },
@@ -135,7 +134,7 @@ export function openHtmlInWebview(htmlFilePath: string, context: vscode.Extensio
     // Debugging (feature ;-) ?): Write the modified HTML back to the file system
     fs.writeFileSync(htmlFilePath, htmlContent, 'utf-8');
 
-    vscode.window.showInformationMessage(
+    vscode.window.showWarningMessage(
         'Pandoc is using MathJax to render equations. \
          Please note that MathJax does not support all LaTeX commands. \
          For more information, visit https://docs.mathjax.org/en/latest/input/tex/extensions/index.html.'

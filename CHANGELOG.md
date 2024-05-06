@@ -4,11 +4,20 @@ All notable changes to the "tex2html" extension will be documented in this file.
 
 ## [Unreleased]
 
+
+- Todo: equation cursor
+
+-> Todo: equation splitting with tags and content
+-> one solution: keep link but remove number
+
+## Released
+
+### 0.0.11
+
 - Fixing bugs with commented lines in the preprocessor
 - Add title to references section with Pandoc
 - Add progress bar during the conversion TEX -> HTML
-
-## Released
+- Remove numbers in the equation references but keep the links (Test)
 
 ### 0.0.10
 
