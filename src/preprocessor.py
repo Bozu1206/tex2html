@@ -22,7 +22,10 @@ def get_iso_language_code(language_name: str) -> str:
 
 
 def resolve_language(tex_content):
-    language_pattern = re.compile(r"\\usepackage\[(.*?)\]{babel}")
+    language_pattern = re.compile(
+        r"^(?!%)\s*\\usepackage\[(.*?)\]{babel}", re.MULTILINE
+    )
+
     language_match = language_pattern.search(tex_content)
 
     if language_match:
@@ -30,6 +33,29 @@ def resolve_language(tex_content):
         return get_iso_language_code(language)
 
     return "en"
+
+
+def resolve_language_from_documentclass(tex_content):
+    doc_class_pattern = re.compile(r"^(?!%)\s*\\documentclass\[(.*?)\]{")
+    doc_class_match = doc_class_pattern.search(tex_content)
+
+    if doc_class_match:
+        options = doc_class_match.group(1).split(",")
+        for option in options:
+            option = option.strip()
+            if option in [
+                "french",
+                "english",
+                "german",
+                "spanish",
+                "ngerman",
+                "francais",
+                "anglais",
+                "allemand",
+            ]:
+                return get_iso_language_code(option)
+
+    return resolve_language(tex_content)
 
 
 def resolve_inputs(tex_content, base_path):
@@ -132,7 +158,7 @@ if __name__ == "__main__":
                 resolved_content = convert_tikz_to_verbatim(resolved_content)
 
             bibliography = find_bib_info(resolved_content)
-            language = resolve_language(resolved_content)
+            language = resolve_language_from_documentclass(resolved_content)
 
         with tempfile.NamedTemporaryFile(
             delete=False, mode="w", suffix=".tex"

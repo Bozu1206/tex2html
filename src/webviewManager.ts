@@ -61,6 +61,7 @@ function replaceMathJaxScripts(htmlContent: string): string {
                 }
             },
           tex: {
+            tags: 'ams', 
             inlineMath: [["$", "$"], ["\\\\(", "\\\\)"]],
             displayMath: [["$$", "$$"], ["\\\\[", "\\\\]"]]
           },
@@ -114,8 +115,6 @@ export function openHtmlInWebview(htmlFilePath: string, context: vscode.Extensio
 
     // TODO: Handle error and inform user in VSCode and in HTML 
     // Question: How to inform user that LaTeX packages are missing in MathJax?
-
-    // NUMBERING EQUATIONS AND SEPARATE TAGS AND EQUATIONS
     htmlContent = handleTheme(htmlContent);    
     htmlContent = htmlContent.replace(/max-width: 36em;/g, 'max-width: 50em;');
     htmlContent = updateHtmlTitle(htmlContent, path.basename(htmlFilePath, '.html') || 'TEX Preview');
