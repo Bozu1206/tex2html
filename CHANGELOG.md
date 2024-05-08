@@ -12,6 +12,10 @@ All notable changes to the "tex2html" extension will be documented in this file.
 
 ## Released
 
+### 0.0.12
+
+- Fix minor bugs
+
 ### 0.0.11
 
 - Fixing bugs with commented lines in the preprocessor

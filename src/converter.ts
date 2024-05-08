@@ -19,6 +19,7 @@ export async function convertTexToHtml(texFilePath: string, context: vscode.Exte
 
     // Debugging purposes
     console.log(`tempFilePath: ${tempFilePath}`);
+    console.log(`lang: ${lang}`);
 
     // Convert to HTML
     if (bib_engine != "?" && bib_filename != "?") {

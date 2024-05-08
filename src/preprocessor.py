@@ -34,7 +34,7 @@ def resolve_language(tex_content):
 
 def resolve_inputs(tex_content, base_path):
     input_pattern = re.compile(
-        r"^\\input{([^}]+?)(\.tex|\.sty)?}(?!.*%.*\1)", re.MULTILINE
+        r"\\input{([^}]+?)(\.tex|\.sty)?}(?![^{]*%\s*\1)", re.MULTILINE
     )
 
     def replacer(match):
@@ -114,7 +114,7 @@ def find_bib_info(latex_content):
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("Usage: python preprocessor.py <path_to_main_tex_file> format")
+        print("Usage: python preprocessor.py <path_to_main_tex_file>")
         sys.exit(1)
 
     main_tex_file_path = sys.argv[1]
