@@ -60,11 +60,11 @@ def resolve_language_from_documentclass(tex_content):
 
 def resolve_inputs(tex_content, base_path):
     input_pattern = re.compile(
-        r"\\input{([^}]+?)(\.tex|\.sty)?}(?![^{]*%\s*\1)", re.MULTILINE
+        r"\\input{\s*([^}]+?)\s*(\.tex|\.sty)?\s*}(?![^{]*%\s*\1)", re.MULTILINE
     )
 
     def replacer(match):
-        file_name = match.group(1)
+        file_name = match.group(1).strip()
         file_extension = match.group(2) if match.group(2) else ".tex"
         file_path = os.path.join(base_path, f"{file_name}{file_extension}")
 

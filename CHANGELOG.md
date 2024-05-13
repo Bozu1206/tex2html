@@ -7,8 +7,15 @@ All notable changes to the "tex2html" extension will be documented in this file.
 ### Todo:
 
 - Correct the bug with figures in subfolders...
+- Fix label equation references
 
 ## Released
+
+### 0.0.15
+
+- Add proper referencing of equations and figures (sections not yet supported)
+- Cleaner user interaction
+- Hopefully fix the language detection bug 
 
 ### 0.0.14
 

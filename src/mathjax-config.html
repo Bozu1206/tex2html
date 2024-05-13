@@ -1,0 +1,33 @@
+<script>
+    window.MathJax = {
+        options: {
+            enableMenu: true, menuOptions: {
+                settings: {
+                    texHints: true, semantics: false,
+                    zoom: 'NoZoom', zscale: '200%', renderer: 'CHTML', alt: false, cmd: false, ctrl: false, shift: false, scale: 1,
+                    inTabOrder: true, assistiveMml: true, collapsible: false, explorer: false
+                }, annotationTypes: {
+                    TeX: ['TeX', 'LaTeX'
+                        , 'application/x-tex'], StarMath: ['StarMath 5.0'], Maple: ['Maple'], ContentMathML:
+                        ['MathML-Content', 'application/mathml-content+xml'], OpenMath: ['OpenMath']
+                }
+            }
+        }, tex: {
+            tags: 'ams', packages:
+                { '[+]': ['tagformat'] }, inlineMath: [["$", "$"], ["\\(", "\\)"]], displayMath: [["$$", "$$"], ["\\[", "\\]"]]
+        }, svg: { fontCache: 'global' }, loader: { load: ['[tex]/ams', '[tex]/tagformat'], }, tagformat: {
+            number: (n) => n.toString(),
+            tag: (tag) => '(' + tag + ')',
+            id: (id) => 'mjx-eqn:' + id.replace(/s/g, '_'),
+            url: (id, base) => base + '#' + encodeURIComponent(id),
+        }
+    };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+<link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css">
+<script src="https://tikzjax.com/v1/tikzjax.js"></script>
+<script>
+    window.MathJax.startup.promise.then(function () {
+        MathJax.typesetPromise();
+    });
+</script>

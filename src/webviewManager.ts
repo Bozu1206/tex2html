@@ -20,65 +20,48 @@ export function updateEquationIds(htmlContent: string): string {
     return dom.serialize();
 }
 
+function replaceLinks(htmlContent: string): string {
+    const dom = new JSDOM(htmlContent);
+    const document = dom.window.document;
+    const figures = document.querySelectorAll('figure');
+    const figureIds = new Set(Array.from(figures).map(fig => fig.id));
+    const links = document.querySelectorAll('a[data-reference-type="ref"][data-reference]');
+
+    links.forEach(link => {
+        const label = link.getAttribute('data-reference');
+        if (label && !figureIds.has(label)) {  
+            const eqrefNode = document.createTextNode(`$\\eqref{${label}}$`);
+            link.replaceWith(eqrefNode);
+        }
+    });
+
+    return dom.serialize();
+}
+
+
 function replaceEquationNotation(htmlContent: string): string {
     const pattern = /\\\[(.*?)\\\]/gs;
-    const updatedContent = htmlContent.replace(pattern, (match, equationContent) => {
-      return `\\[\\begin{equation}${equationContent}\\end{equation}\\]`;
-    });
-    return updatedContent;
+    
+    const ignorePattern = /displayMath: \[\["\$\$", "\$\$"\], \["\\\\\[", "\\\\\]"\]\]/;
+
+    if (ignorePattern.test(htmlContent)) {
+        const parts = htmlContent.split(ignorePattern);
+        return parts.map(part => {
+            if (ignorePattern.test(part)) {
+                return part;
+            } else {
+                return part.replace(pattern, (match, equationContent) => {
+                    return `\\[\\begin{equation}${equationContent}\\end{equation}\\]`;
+                });
+            }
+        }).join('displayMath: [["$$", "$$"], ["\\\\[", "\\\\]"]]'); // Rejoin parts with the original ignored line
+    } else {
+        return htmlContent.replace(pattern, (match, equationContent) => {
+            return `\\[\\begin{equation}${equationContent}\\end{equation}\\]`;
+        });
+    }
 }
   
-function replaceMathJaxScripts(htmlContent: string): string {
-    const pattern = /<script src="https:\/\/cdnjs.cloudflare.com\/polyfill\/v3\/polyfill.min.js\?features=es6"><\/script>\s*<script\s+src="https:\/\/cdn.jsdelivr.net\/npm\/mathjax@3\/es5\/tex-chtml-full.js"\s+type="text\/javascript"><\/script>/gs;
-    const replacement = `<script>
-          window.MathJax = {
-            options: {
-                enableMenu: true,
-                menuOptions: {
-                    settings: {
-                        texHints: true,
-                        semantics: false,
-                        zoom: 'NoZoom',
-                        zscale: '200%',
-                        renderer: 'CHTML',
-                        alt: false,
-                        cmd: false,
-                        ctrl: false,
-                        shift: false,
-                        scale: 1,
-                        inTabOrder: true,
-                        assistiveMml: true,
-                        collapsible: false,
-                        explorer: false
-                    },
-                    annotationTypes: {
-                        TeX: ['TeX', 'LaTeX', 'application/x-tex'],
-                        StarMath: ['StarMath 5.0'],
-                        Maple: ['Maple'],
-                        ContentMathML: ['MathML-Content', 'application/mathml-content+xml'],
-                        OpenMath: ['OpenMath']
-                    }
-                }
-            },
-          tex: {
-            tags: 'ams', 
-            inlineMath: [["$", "$"], ["\\\\(", "\\\\)"]],
-            displayMath: [["$$", "$$"], ["\\\\[", "\\\\]"]]
-          },
-          svg: {
-              fontCache: 'global'
-          },
-          loader: {
-              load: ['[tex]/ams']
-          }
-          };
-      </script>
-      <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
-      <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css">
-      <script src="https://tikzjax.com/v1/tikzjax.js"></script>`;
-  
-    return htmlContent.replace(pattern, replacement); ;
-}
 
 function handleTheme(htmlContent: string) {
     const isDarkTheme = vscode.window.activeColorTheme.kind !== vscode.ColorThemeKind.Light
@@ -113,14 +96,14 @@ export function openHtmlInWebview(htmlFilePath: string, context: vscode.Extensio
     const panel = vscode.window.createWebviewPanel('texToHtmlView', 'TEX Preview', vscode.ViewColumn.Two, { enableScripts: true });
     let htmlContent = fs.readFileSync(htmlFilePath, 'utf8');
 
-    // TODO: Handle error and inform user in VSCode and in HTML 
     // Question: How to inform user that LaTeX packages are missing in MathJax?
     htmlContent = handleTheme(htmlContent);    
     htmlContent = htmlContent.replace(/max-width: 36em;/g, 'max-width: 50em;');
     htmlContent = updateHtmlTitle(htmlContent, path.basename(htmlFilePath, '.html') || 'TEX Preview');
-    htmlContent = replaceEquationNotation(htmlContent);
-    htmlContent = replaceMathJaxScripts(htmlContent);
-    htmlContent = updateEquationIds(htmlContent);
+    
+    // htmlContent = updateEquationIds(htmlContent);
+    htmlContent = replaceLinks(htmlContent);
+    htmlContent = replaceEquationNotation(htmlContent); 
     htmlContent = convertTikZInHTML(htmlContent);
     
     // Convert image paths to vscode-resource URIs
@@ -130,14 +113,12 @@ export function openHtmlInWebview(htmlFilePath: string, context: vscode.Extensio
         return `img src="${vscodeResourcePath}"`;
     });
 
-    // Debugging (feature ;-) ?): Write the modified HTML back to the file system
     fs.writeFileSync(htmlFilePath, htmlContent, 'utf-8');
-
     vscode.window.showWarningMessage(
         'Pandoc is using MathJax to render equations. \
          Please note that MathJax does not support all LaTeX commands. \
          For more information, visit https://docs.mathjax.org/en/latest/input/tex/extensions/index.html.'
-    )
+    );
 
     panel.webview.html = htmlContent;
 }
