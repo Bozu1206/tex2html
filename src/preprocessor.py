@@ -15,6 +15,7 @@ def get_iso_language_code(language_name: str) -> str:
         "Spanish": "es",
         "Ngerman": "de",
         "Chinese": "zh",
+        "British": "en-gb",
     }
 
     normalized_language_name = language_name.capitalize()
@@ -52,6 +53,7 @@ def resolve_language_from_documentclass(tex_content):
                 "francais",
                 "anglais",
                 "allemand",
+                "british",
             ]:
                 return get_iso_language_code(option)
 
@@ -90,6 +92,29 @@ def convert_makeatletter_to_comment(latex_content):
         return f"\\makeatletter\n{commented_content}\n\\makeatother"
 
     return pattern.sub(comment_replacer, latex_content)
+
+
+def wrap_verbatim(latex_content):
+    patterns = [
+        # r"(^|(?<=\n))\s*\\begin\{equation\*?\}.*?\\end\{equation\*?\}",
+        r"(^|(?<=\n))\s*\\begin\{align\*?\}.*?\\end\{align\*?\}",
+    ]
+
+    def verbatim_wrapper(match):
+        env_content = match.group(0)
+        if all(line.strip().startswith("%") for line in env_content.splitlines()):
+            return env_content  # Return unchanged if all lines are commented
+        else:
+            env_name = re.search(r"\\begin\{(.*?)\}", env_content).group(1)
+            wrapped_content = f"\n\\begin{{verbatim}}{env_content}\n\\end{{verbatim}}\n"
+            return wrapped_content
+
+    for pattern in patterns:
+        latex_content = re.sub(
+            pattern, verbatim_wrapper, latex_content, flags=re.DOTALL
+        )
+
+    return latex_content
 
 
 def convert_tikz_to_verbatim(tex_content):
@@ -138,6 +163,10 @@ def find_bib_info(latex_content):
     return (bib_file, bib_package)
 
 
+def find_figures_params(latex_content):
+    return "%![VSCODE]" in latex_content
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print("Usage: python preprocessor.py <path_to_main_tex_file>")
@@ -156,15 +185,17 @@ if __name__ == "__main__":
             if format == "html":
                 resolved_content = convert_makeatletter_to_comment(resolved_content)
                 resolved_content = convert_tikz_to_verbatim(resolved_content)
+                # resolved_content = wrap_verbatim(resolved_content)
 
             bibliography = find_bib_info(resolved_content)
             language = resolve_language_from_documentclass(resolved_content)
+            figures = find_figures_params(resolved_content)
 
         with tempfile.NamedTemporaryFile(
             delete=False, mode="w", suffix=".tex"
         ) as tmpfile:
             tmpfile.write(resolved_content)
-            print(tmpfile.name, language, bibliography[0], bibliography[1])
+            print(tmpfile.name, language, bibliography[0], bibliography[1], figures)
 
     except Exception as e:
         print(f"Error processing {main_tex_file_path}: {e}", file=sys.stderr)

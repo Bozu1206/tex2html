@@ -3,11 +3,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { JSDOM } from 'jsdom';
 
-export function updateEquationIds(htmlContent: string): string {
+
+function updateEquationIds(htmlContent: string): string {
     const dom = new JSDOM(htmlContent);
     const document = dom.window.document;
     const spans = document.querySelectorAll('span.math.display');
-
+    
     spans.forEach(span => {
         const equationContent = span.textContent || '';
         const labelMatch = equationContent.match(/\\label\{([^}]+)\}/);
@@ -20,19 +21,39 @@ export function updateEquationIds(htmlContent: string): string {
     return dom.serialize();
 }
 
-function replaceLinks(htmlContent: string): string {
+function updateEquationReferences(htmlContent: string): string {
     const dom = new JSDOM(htmlContent);
     const document = dom.window.document;
-    const figures = document.querySelectorAll('figure');
-    const figureIds = new Set(Array.from(figures).map(fig => fig.id));
-    const links = document.querySelectorAll('a[data-reference-type="ref"][data-reference]');
+    
+    //<a href="#eq:trigonometric" data-reference-type="ref" data-reference="eq:trigonometric">[eq:trigonometric]</a>
+    const links = Array.from(document.querySelectorAll('a[data-reference-type="ref"][data-reference]'));
+        
+    const spans = document.querySelectorAll('span.math.display');
+    const labelMap = new Map<string, number>();
+    let counter = 1; 
+    spans.forEach(span => {
+        if (span.hasAttribute('id')) {
+            labelMap.set(span.id, counter);
+        }
+        counter++;
+    });
+
+    // Debugging purposes
+    console.log(labelMap);
 
     links.forEach(link => {
-        const label = link.getAttribute('data-reference');
-        if (label && !figureIds.has(label)) {  
-            const eqrefNode = document.createTextNode(`$\\eqref{${label}}$`);
-            link.replaceWith(eqrefNode);
+        const reference = link.getAttribute('data-reference') || '';
+        const referenceId = link.getAttribute('href') || '';
+        const equationNumber = labelMap.get(reference);
+        
+        // do nothing
+        if (equationNumber === undefined) {
+            return;
         }
+
+        link.role = "math";
+        link.className = "eq-ref-link";
+        link.textContent = `(${equationNumber})`;
     });
 
     return dom.serialize();
@@ -64,13 +85,18 @@ function replaceEquationNotation(htmlContent: string): string {
   
 
 function handleTheme(htmlContent: string) {
-    const isDarkTheme = vscode.window.activeColorTheme.kind !== vscode.ColorThemeKind.Light
+    const isDarkTheme = vscode.window.activeColorTheme.kind !== vscode.ColorThemeKind.Light;
+    const regexA = new RegExp(`a\\s*{[^}]*color:\\s*#1a1a1a;[^}]*}`, 'g');
+    const regexVisited = new RegExp(`a:visited\\s*{[^}]*color:\\s*#1a1a1a;[^}]*}`, 'g');
 
     if (isDarkTheme) {
         htmlContent = htmlContent.replace(
             /html\s*{\s*color:\s*#1a1a1a;\s*background-color:\s*#fdfdfd;\s*}/g,
-            'html { color: #ffffff; background-color: #1a1a1a; }\n .citation>a {color: skyblue;}'
+            'html { color: #ffffff; background-color: #1a1a1a; }\n .citation>a {color: white;}\n a {color: white;}\n a:visited {color: white;}'
         );
+
+        htmlContent = htmlContent.replace(regexA, match => match.replace("#1a1a1a", "#ffffff"));
+        htmlContent = htmlContent.replace(regexVisited, match => match.replace("#1a1a1a", "#ffffff"));
     }
     return htmlContent;
 }
@@ -91,8 +117,21 @@ function updateHtmlTitle(htmlContent: string, title: string): string {
     document.title = title;
     return dom.serialize();
 }
-  
-export function openHtmlInWebview(htmlFilePath: string, context: vscode.ExtensionContext) {
+
+function replaceVerbatimInHTML(htmlContent: string): string {
+  htmlContent = htmlContent.replace(/<pre><code>/g, "\\[");
+  htmlContent = htmlContent.replace(/<\/code><\/pre>/g, "\\]");
+  return htmlContent;
+}
+
+function retrievesAlign(htmlContent: string): string {
+    htmlContent = htmlContent.replace(/\\begin{equation}\\begin{aligned}/g, '\\begin{align}');
+    htmlContent = htmlContent.replace(/\\end{aligned}\\end{equation}/g, '\\end{align}');
+    return htmlContent;
+}
+
+
+export function openHtmlInWebview(htmlFilePath: string, context: vscode.ExtensionContext, figuresInVSCode: boolean) {
     const panel = vscode.window.createWebviewPanel('texToHtmlView', 'TEX Preview', vscode.ViewColumn.Two, { enableScripts: true });
     let htmlContent = fs.readFileSync(htmlFilePath, 'utf8');
 
@@ -101,17 +140,21 @@ export function openHtmlInWebview(htmlFilePath: string, context: vscode.Extensio
     htmlContent = htmlContent.replace(/max-width: 36em;/g, 'max-width: 50em;');
     htmlContent = updateHtmlTitle(htmlContent, path.basename(htmlFilePath, '.html') || 'TEX Preview');
     
-    // htmlContent = updateEquationIds(htmlContent);
-    htmlContent = replaceLinks(htmlContent);
+    htmlContent = updateEquationIds(htmlContent);
     htmlContent = replaceEquationNotation(htmlContent); 
+    htmlContent = updateEquationReferences(htmlContent);
     htmlContent = convertTikZInHTML(htmlContent);
+    // htmlContent = replaceVerbatimInHTML(htmlContent);
+    // htmlContent = retrievesAlign(htmlContent);
     
     // Convert image paths to vscode-resource URIs
-    htmlContent = htmlContent.replace(/img src="([^"]+)"/g, (_, p1) => {
-        let imagePath = path.resolve(path.dirname(htmlFilePath), p1);
-        let vscodeResourcePath = panel.webview.asWebviewUri(vscode.Uri.file(imagePath));
-        return `img src="${vscodeResourcePath}"`;
-    });
+    if (figuresInVSCode) {
+        htmlContent = htmlContent.replace(/img src="([^"]+)"/g, (_, p1) => {
+            let imagePath = path.resolve(path.dirname(htmlFilePath), p1);
+            let vscodeResourcePath = panel.webview.asWebviewUri(vscode.Uri.file(imagePath));
+            return `img src="${vscodeResourcePath}"`;
+        });
+    }
 
     fs.writeFileSync(htmlFilePath, htmlContent, 'utf-8');
     vscode.window.showWarningMessage(

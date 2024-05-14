@@ -13,14 +13,8 @@
                 }
             }
         }, tex: {
-            tags: 'ams', packages:
-                { '[+]': ['tagformat'] }, inlineMath: [["$", "$"], ["\\(", "\\)"]], displayMath: [["$$", "$$"], ["\\[", "\\]"]]
-        }, svg: { fontCache: 'global' }, loader: { load: ['[tex]/ams', '[tex]/tagformat'], }, tagformat: {
-            number: (n) => n.toString(),
-            tag: (tag) => '(' + tag + ')',
-            id: (id) => 'mjx-eqn:' + id.replace(/s/g, '_'),
-            url: (id, base) => base + '#' + encodeURIComponent(id),
-        }
+            tags: 'ams', inlineMath: [["$", "$"], ["\\(", "\\)"]], displayMath: [["$$", "$$"], ["\\[", "\\]"]]
+        }, svg: { fontCache: 'global' }, loader: { load: ['[tex]/ams'] },
     };
 </script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
@@ -31,3 +25,20 @@
         MathJax.typesetPromise();
     });
 </script>
+<style>
+    .eq-ref-link {
+        text-decoration: none;
+        color: rgba(22, 39, 222, 0.881);
+        font-weight: bold;
+    }
+
+    .eq-ref-link:visited {
+        color: rgba(22, 39, 222, 0.881);
+        text-decoration: underline;
+    }
+
+    .eq-ref-link:hover {
+        color: rgba(22, 39, 222, 0.881);
+        text-decoration: underline;
+    }
+</style>

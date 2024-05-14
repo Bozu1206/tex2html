@@ -13,10 +13,11 @@ export async function convertTexToHtml(texFilePath: string, context: vscode.Exte
     const lang = ret.split(" ")[1].trim();
     const bib_filename = ret.split(" ")[2].trim();
     const bib_engine = ret.split(" ")[3].trim(); 
+    const figuresInVSCode = ret.split(" ")[4].trim();
     const bib_file_path = path.join(path.dirname(texFilePath), bib_filename);
     const cslFilePath = path.join(__dirname, '..', 'out', 'citation.csl');
     const headerFilePath = path.join(__dirname, '..', 'out', 'mathjax-config.html');
-    const ref = lang === "en" ? "References" : "Références";
+    const ref = lang === "fr" ? "Références" : "References";
 
     // Debugging purposes
     console.log(`tempFilePath: ${tempFilePath}`);
@@ -25,13 +26,14 @@ export async function convertTexToHtml(texFilePath: string, context: vscode.Exte
 
     // Convert to HTML
     if (bib_engine !== "?" && bib_filename !== "?") {
-        await execCommand(`pandoc "${tempFilePath}" -M link-citations=true --bibliography="${bib_file_path}" --citeproc --csl="${cslFilePath}" --metadata lang="${lang}" --metadata reference-section-title="${ref}" --mathjax --include-in-header "${headerFilePath}" -t html -N -s -o "${htmlFilePath}"`);
+        await execCommand(`pandoc -s "${tempFilePath}" -M link-citations=true --bibliography="${bib_file_path}" --citeproc --csl="${cslFilePath}" --metadata lang="${lang}" --metadata reference-section-title="${ref}" --mathjax --include-in-header "${headerFilePath}" -t html -N -o "${htmlFilePath}"`);
     } else {
-        await execCommand(`pandoc "${tempFilePath}" -M link-citations=true --metadata lang="${lang}" --mathjax --include-in-header "${headerFilePath}" -t html -N -s -o "${htmlFilePath}"`);
+        console.log("Running this: " + `pandoc -s "${tempFilePath}" -M link-citations=true --metadata lang="${lang}" --mathjax --include-in-header "${headerFilePath}" -t html -N -o "${htmlFilePath}"`);
+        await execCommand(`pandoc -s "${tempFilePath}" -M link-citations=true --metadata lang="${lang}" --mathjax --include-in-header "${headerFilePath}" -t html -N -o "${htmlFilePath}"`);
     }
     
     // Display in webview
-    openHtmlInWebview(htmlFilePath, context);
+    openHtmlInWebview(htmlFilePath, context, figuresInVSCode === "True" ? true : false);
 }
 
 export async function convertTexToPDF(texFilePath: string, context: vscode.ExtensionContext) {

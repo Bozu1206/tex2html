@@ -4,12 +4,14 @@ All notable changes to the "tex2html" extension will be documented in this file.
 
 ## [Unreleased]
 
-### Todo:
 
-- Correct the bug with figures in subfolders...
-- Fix label equation references
 
 ## Released
+
+### 0.0.16
+
+- Improve the referencing of equations
+- Add possibility to changes figures using %![VSCODE]
 
 ### 0.0.15
 
