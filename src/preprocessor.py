@@ -117,6 +117,12 @@ def wrap_verbatim(latex_content):
     return latex_content
 
 
+def add_tags_to_latex_environments(latex_string):
+    pattern = r"\\begin{(align\*?|equation\*?)}"
+    replacement = r"\\begin{\1}\1"
+    return re.sub(pattern, replacement, latex_string)
+
+
 def convert_tikz_to_verbatim(tex_content):
     tikz_pattern = re.compile(r"\\begin{tikzpicture}.*?\\end{tikzpicture}", re.DOTALL)
 
@@ -185,7 +191,7 @@ if __name__ == "__main__":
             if format == "html":
                 resolved_content = convert_makeatletter_to_comment(resolved_content)
                 resolved_content = convert_tikz_to_verbatim(resolved_content)
-                # resolved_content = wrap_verbatim(resolved_content)
+                resolved_content = add_tags_to_latex_environments(resolved_content)
 
             bibliography = find_bib_info(resolved_content)
             language = resolve_language_from_documentclass(resolved_content)

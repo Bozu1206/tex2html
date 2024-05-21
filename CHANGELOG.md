@@ -4,8 +4,6 @@ All notable changes to the "tex2html" extension will be documented in this file.
 
 ## [Unreleased]
 
-
-
 ## Released
 
 ### 0.0.16

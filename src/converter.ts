@@ -59,6 +59,11 @@ export async function convertTexToPDF(texFilePath: string, context: vscode.Exten
         const bib_file_path = path.join(path.dirname(texFilePath), bib_filename);
         bib_engine === "biblatex" ? bib_engine = "biber" : bib_engine = "bibtex";
 
+           // Debugging purposes
+        console.log(`tempFilePath: ${tempFilePath}`);
+        console.log(`lang: ${lang}`);
+
+
         if (bib_engine !== "?" && bib_filename !== "?") {
             // Convert to PDF
             progress.report({ increment: 20, message: "Running LaTeX..." });

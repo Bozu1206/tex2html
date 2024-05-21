@@ -3,6 +3,46 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { JSDOM } from 'jsdom';
 
+import * as cheerio from 'cheerio';
+
+function transformMathHTML(html: string): string {
+    const $ = cheerio.load(html);
+    let alignCount = 0;
+
+    $('span.math.display').each((index, element) => {
+        let content = $(element).text();
+        if (content.includes('\\begin{align}') && content.includes('\\end{align}')) {
+            content = content.replace(/\\\[\\begin{align}/, '').replace(/\\end{align}\\]/, '');
+            const equations = content.split('\\\\');
+            $(element).empty(); // Clear the original content
+
+            const outerId = `dont_count_me_${alignCount++}`;
+            $(element).attr('id', outerId); // Assign the new ID to the outer span
+
+            equations.forEach((eq, idx) => {
+                const labelMatch = eq.match(/\\label{([^}]+)}/);
+                const id = labelMatch ? labelMatch[1] : null;
+                let equationWithoutLabelAndAmpersands = eq.replace(/\\label{[^}]+}/, '').trim();
+                equationWithoutLabelAndAmpersands = equationWithoutLabelAndAmpersands.replace(/&/g, ' ').trim(); // Remove all '&'
+
+                if (equationWithoutLabelAndAmpersands) {
+                    const newElement = `<span class="math display" ${id ? `id="${id}"` : ''}>
+                        \\[
+                        \\begin{equation}
+                        ${equationWithoutLabelAndAmpersands}
+                        \\end{equation}
+                        \\]
+                    </span>`;
+                    $(element).append(newElement);
+                }
+            });
+        }
+    });
+
+    return $.html();
+}
+
+
 
 function updateEquationIds(htmlContent: string): string {
     const dom = new JSDOM(htmlContent);
@@ -29,17 +69,28 @@ function updateEquationReferences(htmlContent: string): string {
     const links = Array.from(document.querySelectorAll('a[data-reference-type="ref"][data-reference]'));
         
     const spans = document.querySelectorAll('span.math.display');
+
     const labelMap = new Map<string, number>();
     let counter = 1; 
     spans.forEach(span => {
-        if (span.hasAttribute('id')) {
-            labelMap.set(span.id, counter);
+        if (span.id.includes("dont_count_me")) {
+            return;
         }
+
+        if (span.textContent?.includes("equation*") || span.textContent?.includes("align*")) {
+            return;
+        }
+
+        if (span.textContent?.includes("\\nonumber")) {
+            return;
+        }
+        
+        labelMap.set(span.id, counter);
         counter++;
     });
 
     // Debugging purposes
-    console.log(labelMap);
+    // console.log(labelMap);
 
     links.forEach(link => {
         const reference = link.getAttribute('data-reference') || '';
@@ -118,16 +169,33 @@ function updateHtmlTitle(htmlContent: string, title: string): string {
     return dom.serialize();
 }
 
-function replaceVerbatimInHTML(htmlContent: string): string {
-  htmlContent = htmlContent.replace(/<pre><code>/g, "\\[");
-  htmlContent = htmlContent.replace(/<\/code><\/pre>/g, "\\]");
-  return htmlContent;
+
+function transformEquations(htmlScript: string): string {
+    // This regular expression matches the LaTeX equations that start with \[equation or \[equation*
+    // and captures everything up to the closing \] tag.
+    const regex = /\\\[equation(\*?)\s+((?:.|\n)*?)\\\]/gm;
+
+    // Replace the matched text with the new format using the captured groups
+    const updatedHtml = htmlScript.replace(regex, (_, starred, content) => {
+        const tag = starred ? 'equation*' : 'equation';
+        return `\\[\\begin{${tag}}\n${content}\n\\end{${tag}}\\]`;
+    });
+
+    return updatedHtml;
 }
 
-function retrievesAlign(htmlContent: string): string {
-    htmlContent = htmlContent.replace(/\\begin{equation}\\begin{aligned}/g, '\\begin{align}');
-    htmlContent = htmlContent.replace(/\\end{aligned}\\end{equation}/g, '\\end{align}');
-    return htmlContent;
+function transformAlignedEquations(htmlScript: string): string {
+    // This regular expression matches the LaTeX blocks that start with \[\begin{aligned}
+    // and captures the keyword ("align" or "align*") immediately after, as well as the content
+    // until the closing \].
+    const regex = /\\\[\\begin{aligned}\s+(align\*?)\s+((?:.|\n)*?)\\end{aligned}\\\]/gm;
+
+    // Replace the matched text with the new format using the captured groups
+    const updatedHtml = htmlScript.replace(regex, (_, alignType, content) => {
+        return `\\[\\begin{${alignType}}\n${content.trim()}\n\\end{${alignType}}\\]`;
+    });
+
+    return updatedHtml;
 }
 
 
@@ -140,8 +208,11 @@ export function openHtmlInWebview(htmlFilePath: string, context: vscode.Extensio
     htmlContent = htmlContent.replace(/max-width: 36em;/g, 'max-width: 50em;');
     htmlContent = updateHtmlTitle(htmlContent, path.basename(htmlFilePath, '.html') || 'TEX Preview');
     
+    htmlContent = transformEquations(htmlContent);
+    htmlContent = transformAlignedEquations(htmlContent);
+    htmlContent = transformMathHTML(htmlContent);
     htmlContent = updateEquationIds(htmlContent);
-    htmlContent = replaceEquationNotation(htmlContent); 
+    // htmlContent = replaceEquationNotation(htmlContent); 
     htmlContent = updateEquationReferences(htmlContent);
     htmlContent = convertTikZInHTML(htmlContent);
     // htmlContent = replaceVerbatimInHTML(htmlContent);
