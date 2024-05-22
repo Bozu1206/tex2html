@@ -102,7 +102,6 @@ function updateEquationReferences(htmlContent: string): string {
             return;
         }
 
-        link.role = "math";
         link.className = "eq-ref-link";
         link.textContent = `(${equationNumber})`;
     });
