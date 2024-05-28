@@ -18,8 +18,7 @@ def get_iso_language_code(language_name: str) -> str:
         "British": "en-gb",
     }
 
-    normalized_language_name = language_name.capitalize()
-    return language_map.get(normalized_language_name, "en")
+    return language_map.get(language_name.capitalize(), "en")
 
 
 def resolve_language(tex_content):
@@ -94,33 +93,16 @@ def convert_makeatletter_to_comment(latex_content):
     return pattern.sub(comment_replacer, latex_content)
 
 
-def wrap_verbatim(latex_content):
-    patterns = [
-        # r"(^|(?<=\n))\s*\\begin\{equation\*?\}.*?\\end\{equation\*?\}",
-        r"(^|(?<=\n))\s*\\begin\{align\*?\}.*?\\end\{align\*?\}",
-    ]
-
-    def verbatim_wrapper(match):
-        env_content = match.group(0)
-        if all(line.strip().startswith("%") for line in env_content.splitlines()):
-            return env_content  # Return unchanged if all lines are commented
-        else:
-            env_name = re.search(r"\\begin\{(.*?)\}", env_content).group(1)
-            wrapped_content = f"\n\\begin{{verbatim}}{env_content}\n\\end{{verbatim}}\n"
-            return wrapped_content
-
-    for pattern in patterns:
-        latex_content = re.sub(
-            pattern, verbatim_wrapper, latex_content, flags=re.DOTALL
-        )
-
-    return latex_content
-
-
 def add_tags_to_latex_environments(latex_string):
     pattern = r"\\begin{(align\*?|equation\*?)}"
-    replacement = r"\\begin{\1}\1"
+    replacement = r"\\begin{\1}\1 "
     return re.sub(pattern, replacement, latex_string)
+
+
+def replace_label(text):
+    pattern = r"\\nonumber\s*\\\\\s*\\label{(.*?)}"
+    replacement = r"\\label{\1}"
+    return re.sub(pattern, replacement, text)
 
 
 def convert_tikz_to_verbatim(tex_content):
@@ -192,6 +174,7 @@ if __name__ == "__main__":
                 resolved_content = convert_makeatletter_to_comment(resolved_content)
                 resolved_content = convert_tikz_to_verbatim(resolved_content)
                 resolved_content = add_tags_to_latex_environments(resolved_content)
+                resolved_content = replace_label(resolved_content)
 
             bibliography = find_bib_info(resolved_content)
             language = resolve_language_from_documentclass(resolved_content)

@@ -14,10 +14,10 @@ function transformMathHTML(html: string): string {
         if (content.includes('\\begin{align}') && content.includes('\\end{align}')) {
             content = content.replace(/\\\[\\begin{align}/, '').replace(/\\end{align}\\]/, '');
             const equations = content.split('\\\\');
-            $(element).empty(); // Clear the original content
+            $(element).empty(); 
 
             const outerId = `dont_count_me_${alignCount++}`;
-            $(element).attr('id', outerId); // Assign the new ID to the outer span
+            $(element).attr('id', outerId);
 
             equations.forEach((eq, idx) => {
                 const labelMatch = eq.match(/\\label{([^}]+)}/);
@@ -64,8 +64,6 @@ function updateEquationIds(htmlContent: string): string {
 function updateEquationReferences(htmlContent: string): string {
     const dom = new JSDOM(htmlContent);
     const document = dom.window.document;
-    
-    //<a href="#eq:trigonometric" data-reference-type="ref" data-reference="eq:trigonometric">[eq:trigonometric]</a>
     const links = Array.from(document.querySelectorAll('a[data-reference-type="ref"][data-reference]'));
         
     const spans = document.querySelectorAll('span.math.display');
@@ -73,31 +71,20 @@ function updateEquationReferences(htmlContent: string): string {
     const labelMap = new Map<string, number>();
     let counter = 1; 
     spans.forEach(span => {
-        if (span.id.includes("dont_count_me")) {
+        if (span.id.includes("dont_count_me")
+        ||  span.textContent?.includes("equation*")
+        ||  span.textContent?.includes("align*")
+        ||  span.textContent?.includes("\\nonumber")) {
             return;
         }
-
-        if (span.textContent?.includes("equation*") || span.textContent?.includes("align*")) {
-            return;
-        }
-
-        if (span.textContent?.includes("\\nonumber")) {
-            return;
-        }
-        
         labelMap.set(span.id, counter);
         counter++;
     });
 
-    // Debugging purposes
-    // console.log(labelMap);
-
     links.forEach(link => {
         const reference = link.getAttribute('data-reference') || '';
-        const referenceId = link.getAttribute('href') || '';
         const equationNumber = labelMap.get(reference);
         
-        // do nothing
         if (equationNumber === undefined) {
             return;
         }
@@ -108,32 +95,7 @@ function updateEquationReferences(htmlContent: string): string {
 
     return dom.serialize();
 }
-
-
-function replaceEquationNotation(htmlContent: string): string {
-    const pattern = /\\\[(.*?)\\\]/gs;
-    
-    const ignorePattern = /displayMath: \[\["\$\$", "\$\$"\], \["\\\\\[", "\\\\\]"\]\]/;
-
-    if (ignorePattern.test(htmlContent)) {
-        const parts = htmlContent.split(ignorePattern);
-        return parts.map(part => {
-            if (ignorePattern.test(part)) {
-                return part;
-            } else {
-                return part.replace(pattern, (match, equationContent) => {
-                    return `\\[\\begin{equation}${equationContent}\\end{equation}\\]`;
-                });
-            }
-        }).join('displayMath: [["$$", "$$"], ["\\\\[", "\\\\]"]]'); // Rejoin parts with the original ignored line
-    } else {
-        return htmlContent.replace(pattern, (match, equationContent) => {
-            return `\\[\\begin{equation}${equationContent}\\end{equation}\\]`;
-        });
-    }
-}
   
-
 function handleTheme(htmlContent: string) {
     const isDarkTheme = vscode.window.activeColorTheme.kind !== vscode.ColorThemeKind.Light;
     const regexA = new RegExp(`a\\s*{[^}]*color:\\s*#1a1a1a;[^}]*}`, 'g');
@@ -170,30 +132,20 @@ function updateHtmlTitle(htmlContent: string, title: string): string {
 
 
 function transformEquations(htmlScript: string): string {
-    // This regular expression matches the LaTeX equations that start with \[equation or \[equation*
-    // and captures everything up to the closing \] tag.
     const regex = /\\\[equation(\*?)\s+((?:.|\n)*?)\\\]/gm;
 
-    // Replace the matched text with the new format using the captured groups
     const updatedHtml = htmlScript.replace(regex, (_, starred, content) => {
         const tag = starred ? 'equation*' : 'equation';
         return `\\[\\begin{${tag}}\n${content}\n\\end{${tag}}\\]`;
     });
-
     return updatedHtml;
 }
 
 function transformAlignedEquations(htmlScript: string): string {
-    // This regular expression matches the LaTeX blocks that start with \[\begin{aligned}
-    // and captures the keyword ("align" or "align*") immediately after, as well as the content
-    // until the closing \].
     const regex = /\\\[\\begin{aligned}\s+(align\*?)\s+((?:.|\n)*?)\\end{aligned}\\\]/gm;
-
-    // Replace the matched text with the new format using the captured groups
     const updatedHtml = htmlScript.replace(regex, (_, alignType, content) => {
         return `\\[\\begin{${alignType}}\n${content.trim()}\n\\end{${alignType}}\\]`;
     });
-
     return updatedHtml;
 }
 
@@ -202,21 +154,17 @@ export function openHtmlInWebview(htmlFilePath: string, context: vscode.Extensio
     const panel = vscode.window.createWebviewPanel('texToHtmlView', 'TEX Preview', vscode.ViewColumn.Two, { enableScripts: true });
     let htmlContent = fs.readFileSync(htmlFilePath, 'utf8');
 
-    // Question: How to inform user that LaTeX packages are missing in MathJax?
+    // Post process HTML
     htmlContent = handleTheme(htmlContent);    
     htmlContent = htmlContent.replace(/max-width: 36em;/g, 'max-width: 50em;');
     htmlContent = updateHtmlTitle(htmlContent, path.basename(htmlFilePath, '.html') || 'TEX Preview');
-    
     htmlContent = transformEquations(htmlContent);
     htmlContent = transformAlignedEquations(htmlContent);
     htmlContent = transformMathHTML(htmlContent);
     htmlContent = updateEquationIds(htmlContent);
-    // htmlContent = replaceEquationNotation(htmlContent); 
     htmlContent = updateEquationReferences(htmlContent);
     htmlContent = convertTikZInHTML(htmlContent);
-    // htmlContent = replaceVerbatimInHTML(htmlContent);
-    // htmlContent = retrievesAlign(htmlContent);
-    
+
     // Convert image paths to vscode-resource URIs
     if (figuresInVSCode) {
         htmlContent = htmlContent.replace(/img src="([^"]+)"/g, (_, p1) => {

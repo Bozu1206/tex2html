@@ -3,37 +3,27 @@ import * as path from 'path';
 import { execCommand } from './utils/execUtils';
 import { openHtmlInWebview } from './webviewManager';
 
-export async function convertTexToHtml(texFilePath: string, context: vscode.ExtensionContext) {
+async function preprocessFile(texFilePath: string, outputFormat: string, context: vscode.ExtensionContext, progressCallback?: (message: string, increment?: number) => void) {
     const scriptPath = path.join(__dirname, '..', 'out', 'preprocessor.py');
+    const ret = await execCommand(`python "${scriptPath}" "${texFilePath}" ${outputFormat}`);
+    const [tempFilePath, lang, bib_filename, bib_engine, figuresInVSCode] = ret.split(" ").map(part => part.trim());
+    const bib_file_path = path.join(path.dirname(texFilePath), bib_filename);    
+    return { tempFilePath, lang, bib_filename, bib_engine, figuresInVSCode, bib_file_path };
+}
+
+export async function convertTexToHtml(texFilePath: string, context: vscode.ExtensionContext) {
     const htmlFilePath = texFilePath.replace('.tex', '.html');
-    
-    // Preprocess .tex file
-    const ret = await execCommand(`python "${scriptPath}" "${texFilePath}" html`);
-    const tempFilePath = ret.split(" ")[0].trim();
-    const lang = ret.split(" ")[1].trim();
-    const bib_filename = ret.split(" ")[2].trim();
-    const bib_engine = ret.split(" ")[3].trim(); 
-    const figuresInVSCode = ret.split(" ")[4].trim();
-    const bib_file_path = path.join(path.dirname(texFilePath), bib_filename);
+    const { tempFilePath, lang, bib_filename, bib_engine, figuresInVSCode, bib_file_path } = await preprocessFile(texFilePath, 'html', context);
+
     const cslFilePath = path.join(__dirname, '..', 'out', 'citation.csl');
     const headerFilePath = path.join(__dirname, '..', 'out', 'mathjax-config.html');
     const ref = lang === "fr" ? "Références" : "References";
 
-    // Debugging purposes
-    console.log(`tempFilePath: ${tempFilePath}`);
-    console.log(`lang: ${lang}`);
-    console.log(`headerFilePath: ${headerFilePath}`);
+    const pandocCommand = `pandoc -s "${tempFilePath}" -M link-citations=true ${bib_engine !== "?" && bib_filename !== "?" ? `--bibliography="${bib_file_path}" --citeproc --csl="${cslFilePath}"` : ''} --metadata lang="${lang}" --metadata reference-section-title="${ref}" --mathjax --include-in-header "${headerFilePath}" -t html -N -o "${htmlFilePath}"`;
 
-    // Convert to HTML
-    if (bib_engine !== "?" && bib_filename !== "?") {
-        await execCommand(`pandoc -s "${tempFilePath}" -M link-citations=true --bibliography="${bib_file_path}" --citeproc --csl="${cslFilePath}" --metadata lang="${lang}" --metadata reference-section-title="${ref}" --mathjax --include-in-header "${headerFilePath}" -t html -N -o "${htmlFilePath}"`);
-    } else {
-        console.log("Running this: " + `pandoc -s "${tempFilePath}" -M link-citations=true --metadata lang="${lang}" --mathjax --include-in-header "${headerFilePath}" -t html -N -o "${htmlFilePath}"`);
-        await execCommand(`pandoc -s "${tempFilePath}" -M link-citations=true --metadata lang="${lang}" --mathjax --include-in-header "${headerFilePath}" -t html -N -o "${htmlFilePath}"`);
-    }
+    await execCommand(pandocCommand);
     
-    // Display in webview
-    openHtmlInWebview(htmlFilePath, context, figuresInVSCode === "True" ? true : false);
+    openHtmlInWebview(htmlFilePath, context, figuresInVSCode === "True");
 }
 
 export async function convertTexToPDF(texFilePath: string, context: vscode.ExtensionContext) {
@@ -46,45 +36,29 @@ export async function convertTexToPDF(texFilePath: string, context: vscode.Exten
             vscode.window.showInformationMessage('User canceled the PDF conversion');
         });
 
-        const scriptPath = path.join(__dirname, '..', 'out', 'preprocessor.py');
-        const pdf = path.basename(texFilePath).replace('.tex', '');
+        const { tempFilePath, lang, bib_filename, bib_engine, bib_file_path } = await preprocessFile(texFilePath, 'pdf', context, message => progress.report({ message }));
 
-        // Preprocess .tex file
-        progress.report({ increment: 10, message: "Preprocessing TEX file..." });
-        const ret = await execCommand(`python "${scriptPath}" "${texFilePath}" pdf`);
-        const tempFilePath = ret.split(" ")[0].trim();
-        const lang = ret.split(" ")[1].trim();
-        const bib_filename = ret.split(" ")[2].trim();
-        let bib_engine = ret.split(" ")[3].trim();
-        const bib_file_path = path.join(path.dirname(texFilePath), bib_filename);
-        bib_engine === "biblatex" ? bib_engine = "biber" : bib_engine = "bibtex";
-
-           // Debugging purposes
-        console.log(`tempFilePath: ${tempFilePath}`);
-        console.log(`lang: ${lang}`);
-
+        let effectiveBibEngine = bib_engine === "biblatex" ? "biber" : "bibtex";
 
         if (bib_engine !== "?" && bib_filename !== "?") {
-            // Convert to PDF
+            const pdf = path.basename(texFilePath, '.tex');
+            const latexCommand = `pdflatex -output-directory="${path.dirname(texFilePath)}" -jobname="${pdf}" "${tempFilePath}"`;
+
             progress.report({ increment: 20, message: "Running LaTeX..." });
-            await execCommand(`pdflatex -output-directory="${path.dirname(texFilePath)}" -jobname="${pdf}" "${tempFilePath}"`);
+            await execCommand(latexCommand);
 
             progress.report({ increment: 30, message: "Running bibliography..." });
-            await execCommand(`cd "${path.dirname(texFilePath)}" && ${bib_engine} "${pdf}"`);
+            await execCommand(`cd "${path.dirname(texFilePath)}" && ${effectiveBibEngine} "${pdf}"`);
 
             progress.report({ increment: 20, message: "Finalizing PDF..." });
-            await execCommand(`pdflatex -output-directory="${path.dirname(texFilePath)}" -jobname="${pdf}" "${tempFilePath}"`);
-            await execCommand(`pdflatex -output-directory="${path.dirname(texFilePath)}" -jobname="${pdf}" "${tempFilePath}"`);
+            await execCommand(latexCommand);
+            await execCommand(latexCommand);
         } else {
-            // vscode.window.showWarningMessage("Please add a bibliography file to your .tex file.");
-            progress.report({ increment: 50, message: "Running LaTeX without bibliography..." });
-            await execCommand(`pdflatex -output-directory="${path.dirname(texFilePath)}" -jobname="${pdf}" "${tempFilePath}"`);
-            await execCommand(`pdflatex -output-directory="${path.dirname(texFilePath)}" -jobname="${pdf}" "${tempFilePath}"`);
+            vscode.window.showWarningMessage("Please add a bibliography file to your .tex file.");
         }
 
-        // Display pdf main window
         progress.report({ increment: 10, message: "Opening PDF..." });
-        const pdfFilePath = path.join(path.dirname(texFilePath), `${pdf}.pdf`);
+        const pdfFilePath = path.join(path.dirname(texFilePath), path.basename(texFilePath, '.tex') + '.pdf');
         const pdfFileUri = vscode.Uri.file(pdfFilePath);
         await vscode.commands.executeCommand('vscode.open', pdfFileUri);
     });
