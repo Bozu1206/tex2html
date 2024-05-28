@@ -1,10 +1,14 @@
 # Change Log
 
-All notable changes to the "tex2html" extension will be documented in this file.
-
-## [Unreleased]
+All notable changes to the `tex2html` extension will be documented in this file.
 
 ## Released
+
+### 0.0.17 - 0.0.20
+
+- Fix Minor bugs
+- Add handling of different math environments (align, align*, equation, equation*)
+- Improve references handling
 
 ### 0.0.16
 
