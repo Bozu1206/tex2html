@@ -4,6 +4,11 @@ All notable changes to the `tex2html` extension will be documented in this file.
 
 ## Released
 
+### 0.0.21 - 0.0.22
+
+- Provide extra assistance for dependency solving.
+- Support custom settings, including custom LaTeX compiler.
+
 ### 0.0.17 - 0.0.20
 
 - Fix Minor bugs
