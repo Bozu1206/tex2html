@@ -43,6 +43,10 @@
           "light": "./images/light/pdf.svg",
           "dark": "./images/dark/pdf.svg"
         }
+      },
+      {
+        "command": "extension.selectDirectory",
+        "title": "Select Directory"
       }
     ],
     "menus": {
@@ -58,6 +62,29 @@
           "group": "navigation"
         }
       ]
+    },
+    "configuration": {
+      "title": "Tex2HTML",
+      "properties": {
+        "tex2HTML.command.commandForPandoc": {
+          "type": "string",
+          "default": "pandoc",
+          "description": "Specifies the command for running pandoc.",
+          "markdownDescription": "Select the path to pandoc executable manually. [Select directory](command:extension.selectDirectory?%22tex2HTML.command.commandForPandoc%22)"
+        },
+        "tex2HTML.command.commandForPython": {
+          "type": "string",
+          "default": "python3",
+          "description": "Specifies the command for running pandoc.",
+          "markdownDescription": "Select the path to python executable manually. [Select directory](command:extension.selectDirectory?%22tex2HTML.command.commandForPython%22)"
+        },
+        "tex2HTML.latex.commandForLatex": {
+          "type": "string",
+          "default": "pdflatex",
+          "description": "Specifies the command for latex compliling.",
+          "markdownDescription": "Select the path to latex compiler executable manually. [Select directory](command:extension.selectDirectory?%22tex2HTML.latex.commandForLatex%22)"
+        }
+      }
     }
   },
   "scripts": {
@@ -84,6 +111,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "axios": "^1.7.2",
     "cheerio": "^1.0.0-rc.12",
     "jsdom": "^24.0.0"
   }

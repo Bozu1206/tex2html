@@ -15,8 +15,10 @@ marketplace](https://marketplace.visualstudio.com/items?itemName=ATC.tex2html).
 
 ## Installation
 
-*Note:* you must have `python`, `pandoc` and `pdflatex` installed on your machine.
-`pdflatex` is only required to get the PDF, if you want to use another compiler, you can still compile the PDF manually. Options to change the compiler will be available in the later on.
+*Note:* you must have `python`, `pandoc` and a LaTeX compiler installed on your machine. On Windows, you can simply follow the instructions of pop-up messages for installation. See `INSTALL.md` for more information.\
+
+LaTeX compiler is only required to get the PDF. The default compiler is `pdflatex`, if you want to use another compiler, you can specify in the extension settings.
+
 
 To install the extension, you have several option:
 

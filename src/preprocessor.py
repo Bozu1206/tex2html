@@ -70,7 +70,7 @@ def resolve_inputs(tex_content, base_path):
         file_path = os.path.join(base_path, f"{file_name}{file_extension}")
 
         try:
-            with open(file_path, "r") as file:
+            with open(file_path, "r", encoding = "utf-8") as file:
                 file_base_path = os.path.dirname(file_path)
                 return resolve_inputs(file.read(), file_base_path)
         except FileNotFoundError:
@@ -157,7 +157,8 @@ def find_figures_params(latex_content):
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("Usage: python preprocessor.py <path_to_main_tex_file>")
+        print(len(sys.argv))
+        print("Usage: python preprocessor.py <path_to_main_tex_file> <format>")
         sys.exit(1)
 
     main_tex_file_path = sys.argv[1]
@@ -167,7 +168,7 @@ if __name__ == "__main__":
     bibliography = ("?", "?")
 
     try:
-        with open(main_tex_file_path, "r") as main_tex_file:
+        with open(main_tex_file_path, "r", encoding = "utf-8") as main_tex_file:
             resolved_content = resolve_inputs(main_tex_file.read(), base_path)
 
             if format == "html":
@@ -181,7 +182,7 @@ if __name__ == "__main__":
             figures = find_figures_params(resolved_content)
 
         with tempfile.NamedTemporaryFile(
-            delete=False, mode="w", suffix=".tex"
+            delete=False, mode="w", suffix=".tex", encoding = "utf-8"
         ) as tmpfile:
             tmpfile.write(resolved_content)
             print(tmpfile.name, language, bibliography[0], bibliography[1], figures)
